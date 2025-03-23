@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'authentication_service.dart';
 import 'register_page.dart';
-import 'home_page.dart';
+import 'search_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
@@ -22,7 +22,7 @@ class _LoginPageState extends State<LoginPage> {
 
     UserCredential? user = await authService.login(email, password);
     if (user != null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => HomePage()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => SearchPage()));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Login failed! Incorrect Email and/or Password")),
