@@ -51,11 +51,22 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text("Login", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                  TextField(controller: emailController, decoration: const InputDecoration(labelText: "Email")),
-                  TextField(controller: passwordController, decoration: const InputDecoration(labelText: "Password"), obscureText: true),
+                  const Text(
+                    "Login", 
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)
+                  ),
+                  TextField(
+                    controller: emailController, 
+                    decoration: const InputDecoration(labelText: "Email")
+                  ),
+                  TextField(controller: passwordController, 
+                    decoration: const InputDecoration(labelText: "Password"), 
+                    obscureText: true),
                   const SizedBox(height: 20),
-                  ElevatedButton(onPressed: login, child: const Text("Login")),
+                  ElevatedButton(
+                    onPressed: login, 
+                    child: const Text("Login")
+                  ),
                   TextButton(
                     onPressed: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => RegisterPage()));

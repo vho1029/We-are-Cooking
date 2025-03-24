@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class SpoonacularService {
-  final String apiKey = '47479824a9a442f486fb2cd1059d51c0'; // Replace with your key
+  final String apiKey = '47479824a9a442f486fb2cd1059d51c0';
   final String baseUrl = 'https://api.spoonacular.com';
 
+  /*
   Future<Map<String, dynamic>?> searchRecipes(String query) async {
     final url = Uri.parse('$baseUrl/recipes/complexSearch?query=$query&apiKey=$apiKey');
 
@@ -21,7 +22,7 @@ class SpoonacularService {
       print('Error: $e');
       return null;
     }
-  }
+  }*/
 
   Future<Map<String, dynamic>?> searchRecipesPaginated(String query, int offset, int limit) async {
     try {

@@ -17,7 +17,7 @@ class _SearchPageState extends State<SearchPage> {
 
   List recipes = [];
   int offset = 0;
-  final int limit = 25;
+  final int limit = 20;
   bool isLoading = false;
   bool hasMore = true;
   bool isDisposed = false;
@@ -105,20 +105,24 @@ class _SearchPageState extends State<SearchPage> {
         ],
         title: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: TextField(
-            onChanged: onSearch,
-            decoration: InputDecoration(
-              hintText: "Search recipes...",
-              hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-              prefixIcon: Icon(Icons.search, color: Colors.white),
-              filled: true,
-              fillColor: Colors.white.withOpacity(0.2),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: BorderSide.none,
+          child: SizedBox(
+            height: 40, 
+            child: TextField(
+              onChanged: onSearch,
+              decoration: InputDecoration(
+                hintText: "Search recipes...",
+                hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+                prefixIcon: Icon(Icons.search, color: Colors.white),
+                filled: true,
+                fillColor: Colors.white.withOpacity(0.2),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
+              style: TextStyle(color: Colors.white),
             ),
-            style: TextStyle(color: Colors.white),
           ),
         ),
       ),
@@ -138,36 +142,59 @@ class _SearchPageState extends State<SearchPage> {
                 borderRadius: BorderRadius.circular(15),
               ),
               child: recipes.isEmpty && !isLoading
-                  ? const Center(child: Text("No recipes found."))
-                  : ListView.builder(
+                  ? const Center(child: Text("No recipes found.", style: TextStyle(color: Colors.white)))
+                  : GridView.builder(
                       controller: _scrollController,
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 0.8,
+                      ),
                       itemCount: recipes.length + (hasMore ? 1 : 0),
                       itemBuilder: (context, index) {
                         if (index == recipes.length) {
                           return const Center(
-                              child: Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(),
-                          ));
+                            child: Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
                         }
-                        return ListTile(
-                          title: Text(
-                            recipes[index]['title'],
-                            style: TextStyle(color: Colors.white),
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: const Color.fromARGB(255, 66, 61, 77),
+                            borderRadius: BorderRadius.circular(10),
                           ),
-                          leading: Image.network(
-                            recipes[index]['image'] ?? '',
-                            width: 50,
-                            height: 50,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Image.asset(
-                                'assets/images/placeholder.jpg',
-                                width: 50,
-                                height: 50,
-                                fit: BoxFit.cover,
-                              );
-                            },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(top: Radius.circular(10)),
+                                  child: Image.network(
+                                    recipes[index]['image'] ?? '',
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        'assets/images/placeholder.jpg',
+                                        width: double.infinity,
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                              Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Text(
+                                  recipes[index]['title'],
+                                  style: const TextStyle(color: Colors.white),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
                           ),
                         );
                       },
