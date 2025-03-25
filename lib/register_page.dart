@@ -13,20 +13,52 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final TextEditingController nameController = TextEditingController();
+  final TextEditingController confirmPasswordController = TextEditingController();
   final AuthenticationService authService = AuthenticationService();
 
   void signUp() async {
+    String name = nameController.text.trim();
     String email = emailController.text.trim();
     String password = passwordController.text.trim();
+    String confirmPassword = confirmPasswordController.text.trim();
 
-    UserCredential? user = await authService.signUp(email, password);
-    if (user != null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
-    } else {
+    if (name.isEmpty || email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Registration failed! Try again.")),
+        const SnackBar(content: Text("Please fill in all fields")),
       );
+      return;
     }
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Passwords do not match")),
+      );
+      return;
+    }
+
+    try {
+      UserCredential? user = await authService.signUp(email, password, name);
+      if (user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const LoginPage()),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Registration failed: $e")),
+      );
+    } 
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
   }
 
   @override
@@ -55,12 +87,21 @@ class _RegisterPageState extends State<RegisterPage> {
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: "Full Name"),
+                  ),
+                  TextField(
                     controller: emailController,
                     decoration: const InputDecoration(labelText: "Email"),
                   ),
                   TextField(
                     controller: passwordController,
                     decoration: const InputDecoration(labelText: "Password"),
+                    obscureText: true,
+                  ),
+                  TextField(
+                    controller: confirmPasswordController,
+                    decoration: const InputDecoration(labelText: "Confirm Password"),
                     obscureText: true,
                   ),
                   const SizedBox(height: 20),
