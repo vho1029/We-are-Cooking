@@ -37,38 +37,51 @@ const Signup = () => {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-bold">Create an Account</h2>
-      <form onSubmit={handleSignup} className="mt-4">
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          className="border p-2 rounded w-full"
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="border p-2 rounded w-full mt-2"
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="border p-2 rounded w-full mt-2"
-          required
-        />
-        <button type="submit" className="bg-green-500 text-white p-2 mt-2 rounded">
+    <div className="p-6 bg-white rounded-lg shadow-md max-w-md mx-auto">
+      <h2 className="text-2xl font-bold text-slate-800 mb-6">Create an Account</h2>
+      <form onSubmit={handleSignup} className="space-y-4">
+        <div>
+          <input
+            type="text"
+            placeholder="Username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-700"
+            required
+          />
+        </div>
+        <div>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-700"
+            required
+          />
+        </div>
+        <div>
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-gray-700"
+            required
+          />
+        </div>
+        <button 
+          type="submit" 
+          className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-md transition duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+        >
           Sign Up
         </button>
       </form>
-      {message && <p className="mt-2 text-red-500">{message}</p>}
+      {message && (
+        <p className={`mt-4 p-3 rounded-md ${message.includes("successful") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"} font-medium`}>
+          {message}
+        </p>
+      )}
     </div>
   );
 };
