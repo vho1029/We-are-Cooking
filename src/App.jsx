@@ -70,7 +70,7 @@ function App() {
 
           {/* Main pages */}
           <Route path="/recipes" element={<RecipesPage userData={userData} />} />
-          <Route path="/mealplan" element={<MealPlanPage />} />
+          <Route path="/mealplan" element={<MealPlanPage userData={userData}/>} />
           <Route path="/favorites" element={<Favorites userData={userData}/>} />
           <Route path="/profile" element={<Profile userData={userData} />} />
           <Route path="/recipe/:id" element={<RecipeDetails />} />

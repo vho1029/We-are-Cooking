@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { fetchFilteredRecipes } from "../api";
 import FavoriteButton from "./FavoriteButton";
+import MealPlanButton from "./MealPlanButton";
 
 const RecipeSearch = ({ userData }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -119,6 +120,7 @@ const RecipeSearch = ({ userData }) => {
             )}
             <div className="flex items-center justify-between mt-3">
               <FavoriteButton recipeId={recipe.id} userId={userData?.id} />
+              <MealPlanButton recipeId={recipe.id} userId={userData?.id} />
               <Link 
                 to={`/recipe/${recipe.id}`}
                 className="text-blue-600 hover:underline"
