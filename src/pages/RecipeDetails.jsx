@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getRecipeDetails } from "../api";
+import { getIngredientPrices } from "../api";
+
 
 export default function RecipeDetails() {
   const { id } = useParams();
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [ingredientPrices, setIngredientPrices] = useState([]);
+
 
   useEffect(() => {
     async function fetchDetails() {
@@ -16,6 +20,10 @@ export default function RecipeDetails() {
           setError("No recipe details found.");
         } else {
           setRecipe(data);
+          if (data.extendedIngredients) {
+            const priceData = await getIngredientPrices(data.extendedIngredients);
+            setIngredientPrices(priceData);
+          }          
         }
       } catch (err) {
         console.error("Error fetching recipe details:", err);
@@ -57,9 +65,17 @@ export default function RecipeDetails() {
         <section className="mb-6">
           <h3 className="text-xl font-semibold mb-2">Ingredients</h3>
           <ul className="list-disc list-inside">
-            {recipe.extendedIngredients.map((ing) => (
-              <li key={ing.id}>{ing.original}</li>
-            ))}
+            {recipe.extendedIngredients.map((ing, idx) => {
+              const priceInfo = ingredientPrices.find(p => p.name.toLowerCase() === ing.name.toLowerCase());
+              return (
+                <li key={ing.id}>
+                  {ing.original}
+                  {priceInfo && priceInfo.estimatedPrice && (
+                    <span className="text-sm text-gray-600"> — ${priceInfo.estimatedPrice.toFixed(2)}</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
