@@ -17,7 +17,7 @@ const RecipeSearch = ({ userData }) => {
 
     // Build query parameters
     const params = new URLSearchParams({
-      apiKey: "e035ff36a0824d768ead204d0104ec67",
+      apiKey: "47479824a9a442f486fb2cd1059d51c0",//"e035ff36a0824d768ead204d0104ec67",
       query: searchTerm,
       number: 10,
     });

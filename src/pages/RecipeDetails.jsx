@@ -66,12 +66,14 @@ export default function RecipeDetails() {
           <h3 className="text-xl font-semibold mb-2">Ingredients</h3>
           <ul className="list-disc list-inside">
             {recipe.extendedIngredients.map((ing, idx) => {
-              const priceInfo = ingredientPrices.find(p => p.name.toLowerCase() === ing.name.toLowerCase());
+              const priceInfo = ingredientPrices[idx]; // Match by index
               return (
                 <li key={ing.id}>
                   {ing.original}
-                  {priceInfo && priceInfo.estimatedPrice && (
+                  {priceInfo && priceInfo.estimatedPrice ? (
                     <span className="text-sm text-gray-600"> — ${priceInfo.estimatedPrice.toFixed(2)}</span>
+                  ) : (
+                    <span className="text-sm text-gray-600"> — Price unavailable</span>
                   )}
                 </li>
               );
