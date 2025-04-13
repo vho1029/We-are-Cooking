@@ -9,7 +9,6 @@ export default function RecipesPage({ userData }) {
       <main className="max-w-7xl mx-auto p-4 space-y-6">
         {/* Top Section: Search */}
         <section className="bg-white p-4 rounded shadow">
-          <h2 className="text-2xl font-bold mb-2">Search Recipes</h2>
           <RecipeSearch userData={userData} />
         </section>
 

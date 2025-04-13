@@ -11,6 +11,7 @@ import "./index.css";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Navbar from "./components/Navbar";
+import Hero from "./components/Hero";
 
 // Renamed pages:
 // - RecipesPage is now the renamed Dashboard (originally Dashboard.jsx, renamed to Recipes.jsx)
@@ -22,6 +23,7 @@ import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import RecipeDetails from "./pages/RecipeDetails";
 import PantryPage from "./pages/Pantry";
+import Auth from "./pages/Auth";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -84,19 +86,12 @@ function App() {
     );
   }
 
-  // Not Logged In: Show Auth Forms
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold">Meal Prep & Recipe App</h1>
-      {/* <h2 className="text-4xl text-green-600 font-bold mt-4">Tailwind is working!</h2> */}
-      {showLogin ? <Login /> : <Signup />}
-      <button
-        className="mt-4 text-blue-500 underline"
-        onClick={() => setShowLogin(!showLogin)}
-      >
-        {showLogin ? "Don't have an account? Sign up" : "Already have an account? Log in"}
-      </button>
-    </div>
+    <Routes>
+      <Route path="/" element={<Hero />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 }
 
