@@ -6,6 +6,7 @@ const GEMINI_API_KEY = "AIzaSyDYnaotthPtFO3gArWCHqGbrviybJCYRvw";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 const KROGER_CLIENT_ID = "mealprepapp-24326124303424556b5a65387447326d6a5763766973473633306e754f6c6e6d48375645546463636643517a6f6c4966517046636c724447375658756751103866440180440";
 const KROGER_CLIENT_SECRET = "mPEStwcJ7wJKhKpnsMzIXRhr6sNhWwZugzG7biua";
+import { supabase } from "./supabaseClient";
 
 export const fetchRecipes = async (query) => {
   try {
@@ -34,6 +35,217 @@ export const getRecipeDetails = async (id) => {
   }
 };
 
+export const saveRecipeToSupabase = async (recipe, totalPrice) => {
+  try {
+    if (!recipe || !recipe.id) {
+      throw new Error('Invalid recipe data');
+    }
+
+    const spoonacularId = recipe.id;
+
+    //Check if the recipe already exists
+    const { data: existingRecipe, error: fetchError } = await supabase
+      .from('test_recipes')
+      .select('spoonacular_id') 
+      .eq('spoonacular_id', spoonacularId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error checking for existing recipe:', fetchError.message);
+      return null;
+    }
+
+    if (existingRecipe) {
+      //If exists, update only the price
+      const { error: updateError } = await supabase
+        .from('test_recipes')
+        .update({ total_price: totalPrice })
+        .eq('spoonacular_id', spoonacularId);
+
+      if (updateError) {
+        console.error('Error updating recipe price:', updateError.message);
+        return null;
+      }
+
+      return { ...existingRecipe, total_price: totalPrice }; 
+    } else {
+      // If not exists, insert new recipe
+      const newRecipe = {
+        created_at: new Date().toISOString(),
+        spoonacular_id: recipe.id,
+        title: recipe.title,
+        image: recipe.image,
+        summary: recipe.summary,
+        ready_in_minutes: recipe.readyInMinutes,
+        servings: recipe.servings,
+        extended_ingredients: recipe.extendedIngredients,
+        analyzed_instructions: recipe.analyzedInstructions,
+        nutrition: recipe.nutrition,
+        wine_pairing: recipe.winePairing,
+        total_price: totalPrice,
+      };
+
+      const { data, error } = await supabase
+        .from('test_recipes')
+        .insert([newRecipe])
+        .select();
+
+      if (error) {
+        console.error('Error saving new recipe:', error.message);
+        return null;
+      }
+
+      return data?.[0];
+    }
+  } catch (error) {
+    console.error('Unexpected error saving recipe:', error);
+    return null;
+  }
+};
+
+
+export const getRecipeFromSupabase = async (spoonacularId) => {
+  const { data, error } = await supabase
+    .from('test_recipes')
+    .select('*')
+    .eq('spoonacular_id', spoonacularId)
+    .single();
+
+  if (error) {
+    console.error('Error fetching recipe from Supabase:', error.message);
+    return null;
+  }
+  return data;
+};
+
+export const insertIngredient = async ({
+  ingredientName,
+  unit,
+  caloriesPerUnit,
+  pricePerUnit,
+  externalId,
+  spoonacularId
+}) => {
+  try {
+    const { data: existingIngredient, error: fetchError } = await supabase
+      .from('ingredients')
+      .select('ingredient_id')
+      .eq('external_id', externalId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error checking ingredient:', fetchError.message);
+      return null;
+    }
+
+    if (existingIngredient) {
+      const { error: updateError } = await supabase
+        .from('ingredients')
+        .update({
+          price_per_unit: pricePerUnit,
+          calories_per_unit: caloriesPerUnit,
+          last_updated: new Date().toISOString(),
+        })
+        .eq('ingredient_id', existingIngredient.ingredient_id);
+      if (updateError) {
+        console.error('Error updating existing ingredient:', updateError.message);
+        return null;
+      }
+      console.log(`Updated ingredient ${ingredientName} with ingredient ID: `, existingIngredient.ingredient_id);
+      return existingIngredient.ingredient_id;
+    }
+
+    const { data: inserted, error: insertError } = await supabase
+      .from('ingredients')
+      .insert([{
+        name: ingredientName,
+        unit,
+        calories_per_unit: caloriesPerUnit,
+        price_per_unit: pricePerUnit,
+        last_updated: new Date().toISOString(),
+        external_id: externalId,
+        spoonacular_id: spoonacularId,
+      }])
+      .select('ingredient_id')
+      .single();
+
+    if (insertError) {
+      console.error('Error inserting new ingredient:', insertError.message);
+      return null;
+    }
+    console.log(`Inserted ingredient ${ingredientName} with ingredient ID: `, inserted.ingredient_id);
+    return inserted.ingredient_id;
+  } catch (err) {
+    console.error('Unexpected error in upsertIngredient:', err);
+    return null;
+  }
+};
+
+export const insertPantryItem = async ({
+  userId,
+  ingredientId,
+  ingredientName,
+  quantity,
+  unit,
+  price,
+  externalId,
+  spoonacularId,
+  spoonacularRecipeId,
+}) => {
+  try {
+    const { data: existingEntry, error: fetchError } = await supabase
+      .from('pantry')
+      .select('pantry_id, quantity, price')
+      .eq('user_id', userId)
+      .eq('ingredient_id', ingredientId)
+      .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error('Error checking pantry:', fetchError.message);
+      return;
+    }
+
+    if (existingEntry) {
+      // Update existing entry
+      const updatedQuantity = existingEntry.quantity + quantity;
+      const updatedPrice = (existingEntry.price || 0) + price;
+
+      const { error: updateError } = await supabase
+        .from('pantry')
+        .update({
+          quantity: updatedQuantity,
+          price: updatedPrice,
+          added_at: new Date().toISOString(),
+        })
+        .eq('pantry_id', existingEntry.pantry_id);
+
+      if (updateError) {
+        console.error('Error updating pantry item:', updateError.message);
+      }
+    } else {
+      // Insert new pantry entry
+      const { error: insertError } = await supabase.from('pantry').insert([{
+        user_id: userId,
+        ingredient_id: ingredientId,
+        name: ingredientName,
+        quantity,
+        unit,
+        price,
+        added_at: new Date().toISOString(),
+        external_id: externalId,
+        spoonacular_id: spoonacularId,
+        spoonacular_recipe_id: spoonacularRecipeId,
+      }]);
+
+      if (insertError) {
+        console.error('Error inserting new pantry item:', insertError.message);
+      }
+    }
+  } catch (err) {
+    console.error('Unexpected error in upsertPantryItem:', err);
+  }
+};
+
 export const getMealPlan = async () => {
   try {
     const response = await fetch(
@@ -44,6 +256,28 @@ export const getMealPlan = async () => {
   } catch (error) {
     console.error("Error fetching meal plan:", error);
     return null;
+  }
+};
+
+export const addMealPlan = async ({ userId, recipeId, mealType, scheduledDate }) => {
+  try {
+    const { error } = await supabase
+      .from('user_meal_plans')
+      .insert([
+        {
+          user_id: userId,
+          spoonacular_id: recipeId,
+          meal_type: mealType,
+          scheduled_date: scheduledDate,
+        },
+      ]);
+      console.log("Recipe added to meal plan");
+    if (error) {
+      throw new Error(error.message);
+    }
+  } catch (err) {
+    console.error('Error adding to meal plan:', err.message);
+    alert('Failed to add to meal plan.');
   }
 };
 
@@ -83,7 +317,7 @@ export const getRecipeIngredients = async (id) => {
       name: item.name,
       amount: item.amount,
       unit: item.unit,
-      original: item.original, // full text description like "2 cups of flour"
+      original: item.original, 
     })) || [];
 
     return ingredients;
