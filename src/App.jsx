@@ -21,6 +21,7 @@ import MealPlanPage from "./pages/MealPlan";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import RecipeDetails from "./pages/RecipeDetails";
+import PantryPage from "./pages/Pantry";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -72,6 +73,7 @@ function App() {
           <Route path="/recipes" element={<RecipesPage userData={userData} />} />
           <Route path="/mealplan" element={<MealPlanPage userData={userData}/>} />
           <Route path="/favorites" element={<Favorites userData={userData}/>} />
+          <Route path="/pantry" element={<PantryPage userData={userData} />} />
           <Route path="/profile" element={<Profile userData={userData} />} />
           <Route path="/recipe/:id" element={<RecipeDetails />} />
 

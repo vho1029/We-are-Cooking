@@ -14,6 +14,9 @@ export default function Navbar() {
         <NavLink to="/favorites" className={({ isActive }) => isActive ? "font-bold text-green-600" : ""}>
           Favorites
         </NavLink>
+        <NavLink to="/pantry" className={({ isActive }) => isActive ? "font-bold text-green-600" : ""}>
+          Pantry
+        </NavLink>
         <NavLink to="/profile" className={({ isActive }) => isActive ? "font-bold text-green-600" : ""}>
           Profile
         </NavLink>

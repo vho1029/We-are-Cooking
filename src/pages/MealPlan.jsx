@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Link } from "react-router-dom";
+import RemoveRecipeButton from "../components/RemovePlanButton";
 
 const MealPlanPage = ({ userData }) => {
   const [mealPlans, setMealPlans] = useState([]);
@@ -89,12 +90,17 @@ const MealPlanPage = ({ userData }) => {
                   className="w-32 h-32 object-cover mt-2 rounded-md"
                 />
               )}
-              <Link
-                to={`/recipe/${plan.spoonacular_id}`}
-                className="text-blue-600 hover:underline mt-2 inline-block"
-              >
-                View Recipe
-              </Link>
+              <div className="flex justify-between items-center mt-2">
+                {/* Remove Recipe Button */}
+                <RemoveRecipeButton recipeId={plan.recipe?.id} userId={userData?.id} />
+                {/* View Recipe Button */}
+                <Link
+                  to={`/recipe/${plan.spoonacular_id}`}
+                  className="text-blue-600 hover:underline"
+                >
+                  View Recipe
+                </Link>
+              </div>
             </div>
           ))}
         </div>
