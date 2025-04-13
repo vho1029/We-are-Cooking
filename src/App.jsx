@@ -11,6 +11,7 @@ import "./index.css";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Navbar from "./components/Navbar";
+import UpdateProfile from "./components/UpdateProfile";
 
 // Renamed pages:
 // - RecipesPage is now the renamed Dashboard (originally Dashboard.jsx, renamed to Recipes.jsx)
@@ -74,6 +75,7 @@ function App() {
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/profile" element={<Profile userData={userData} />} />
           <Route path="/recipe/:id" element={<RecipeDetails />} />
+          <Route path="/update-profile" element={<UpdateProfile />} />
 
           {/* Catch-all: If no route matches, go to /recipes */}
           <Route path="*" element={<Navigate to="/recipes" />} />
