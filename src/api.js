@@ -455,7 +455,7 @@ export const getIngredientPrices = async (ingredients) => {
 export const parseIngredientsWithGemini = async (ingredientsText) => {
   const prompt = `Parse the following ingredient descriptions into structured JSON. 
 Each ingredient should have: name, amount (in grams), and unit: "g". 
-Try to keep the names simple, eg "deskinned, boneless chicken breasts" converts to "chicken breasts", but branded names should be kept the same, eg "Kraft Recipe Makers Chicken Bruschetta Pasta" converts to "Kraft Recipe Makers Chicken Bruschetta Pasta"
+Try to keep the names simple, eg "deskinned, boneless chicken breasts" converts to "chicken breasts", remove braning but preserve ingredient type, eg "Kraft Recipe Makers Chicken Bruschetta Pasta" converts to "Chicken Bruschetta Pasta"
 Convert all quantities to grams based on the ingredient and unit.
 Return an array of JSON objects. Do not include any explanation or text before or after the JSON.
 
@@ -501,7 +501,7 @@ ${ingredientsText}`;
 
 export const parseKrogerIngredientsWithGemini = async ({ name, price, size }) => {
   const prompt = `
-    Simplify the name to the best possible, but if it is a branded ingredient do not simplify the name and keep as is (e.g., "boneless, skinless chicken breasts" → "chicken breasts" but "Kraft Recipe Makers Chicken Bruschetta Pasta" -> "Kraft Recipe Makers Chicken Bruschetta Pasta"):\n\n${name}
+    Simplify the name to the best possible, but if it is a branded ingredient remove branding but preserve the ingredient type (e.g., "boneless, skinless chicken breasts" → "chicken breasts" but for branded ingredients "Kraft Recipe Makers Chicken Bruschetta Pasta" -> "Chicken Bruschetta Pasta"):\n\n${name}
     \n\n
     Given the following size/quantity information, extract and return the weight in grams (e.g., "2 lb" → 907 grams, "12 oz" → 340 grams):\n\n${size}
     \n\n
@@ -534,7 +534,9 @@ export const parseKrogerIngredientsWithGemini = async ({ name, price, size }) =>
 
   // Calculate price per gram
   const pricePerGram = weightInGrams > 0 ? price / weightInGrams : 0;
-
+  console.log(`Simplified Name for Kroger Item is ${simplifiedName}`);
+  console.log(`Weight In grams for Kroger Item is ${weightInGrams}`);
+  console.log(`Calories in grams for Kroger Item is ${caloriesPerGram}`);
   return {
     name: simplifiedName,
     pricePerGram,
