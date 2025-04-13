@@ -46,7 +46,7 @@ export const saveRecipeToSupabase = async (recipe, totalPrice) => {
     //Check if the recipe already exists
     const { data: existingRecipe, error: fetchError } = await supabase
       .from('test_recipes')
-      .select('spoonacular_id') 
+      .select('recipe_id, spoonacular_id') 
       .eq('spoonacular_id', spoonacularId)
       .single();
 
@@ -56,7 +56,7 @@ export const saveRecipeToSupabase = async (recipe, totalPrice) => {
     }
 
     if (existingRecipe) {
-      //If exists, update only the price
+      // If exists, update only the price
       const { error: updateError } = await supabase
         .from('test_recipes')
         .update({ total_price: totalPrice })
@@ -67,7 +67,7 @@ export const saveRecipeToSupabase = async (recipe, totalPrice) => {
         return null;
       }
 
-      return { ...existingRecipe, total_price: totalPrice }; 
+      return existingRecipe.recipe_id;
     } else {
       // If not exists, insert new recipe
       const newRecipe = {
@@ -95,7 +95,7 @@ export const saveRecipeToSupabase = async (recipe, totalPrice) => {
         return null;
       }
 
-      return data?.[0];
+      return data.recipe_id;
     }
   } catch (error) {
     console.error('Unexpected error saving recipe:', error);
@@ -259,13 +259,14 @@ export const getMealPlan = async () => {
   }
 };
 
-export const addMealPlan = async ({ userId, recipeId, mealType, scheduledDate }) => {
+export const addMealPlan = async ({ userId, recipeId, mealType, scheduledDate , recipeDbId}) => {
   try {
     const { error } = await supabase
       .from('user_meal_plans')
       .insert([
         {
           user_id: userId,
+          recipe_id: recipeDbId,
           spoonacular_id: recipeId,
           meal_type: mealType,
           scheduled_date: scheduledDate,
@@ -326,70 +327,6 @@ export const getRecipeIngredients = async (id) => {
     return [];
   }
 };
-
-/*
-export const getKrogerAccessToken = async () => {
-  const authString = `${KROGER_CLIENT_ID}:${KROGER_CLIENT_SECRET}`;
-  const encodedAuth = btoa(authString);
-
-  const response = await fetch("/api/v1/connect/oauth2/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: `Basic ${encodedAuth}`,
-    },
-    body: new URLSearchParams({
-      grant_type: "client_credentials",
-      scope: "product.compact",
-    }),
-  });
-
-  const data = await response.json();
-  return data.access_token;
-};
-
-
-export const getKrogerAccessToken = async () => {
-  const res = await fetch("http://localhost:3001/kroger-token", {
-    method: "POST",
-  });
-
-  const data = await res.json();
-  return data.access_token;
-};
-
-
-const getKrogerLocationId = async () => {
-  const zipCode = '30033';
-  const token = await getKrogerAccessToken();
-  
-  try {
-    const response = await fetch(`/api/v1/locations?filter.zipCode.near=${zipCode}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-    
-    const data = await response.json();
-    
-    if (data.data && data.data.length > 0) {
-      const location = data.data[0];
-      const locationId = location.locationId;
-      
-      console.log(`Location ID for ${location.name} is: ${locationId}`);
-      return locationId;  // Return the location ID for use in further requests
-    } else {
-      console.error('No locations found for the given zip code.');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error fetching location ID:', error);
-    return null;
-  }
-};
-*/
 
 export const getKrogerAuthAndLocationId = async () => {
   const zipCode = '30033';

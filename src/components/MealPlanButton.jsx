@@ -21,7 +21,6 @@ const MealPlanButton = ({ recipeId, userId }) => {
     setLoading(true);
     setSuccessMsg("");
     const recipe = await getRecipeDetails(recipeId);
-    await addMealPlan({userId, recipeId, mealType, scheduledDate});
     try {
       const rawIngredients = recipe.extendedIngredients?.map((item) => ({
         id: item.id,
@@ -51,7 +50,8 @@ const MealPlanButton = ({ recipeId, userId }) => {
         const ingredientId = await insertIngredient({ingredientName, unit, caloriesPerUnit, pricePerUnit, externalId, spoonacularId});
         await insertPantryItem({userId, ingredientId, ingredientName, quantity, unit, price, externalId, spoonacularId, recipeId});
       }
-      await saveRecipeToSupabase(recipe, totalPrice);
+      const recipeDbId = await saveRecipeToSupabase(recipe, totalPrice);
+      await addMealPlan({userId, recipeId, mealType, scheduledDate, recipeDbId});
       setSuccessMsg("Added to meal plan and updated pantry!");
     } catch (err) {
       console.error("Unexpected error:", err);
