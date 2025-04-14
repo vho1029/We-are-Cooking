@@ -1,3 +1,4 @@
+import { GroceryProvider } from "./context/GroceryContext";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom"; // Import BrowserRouter
@@ -6,8 +7,11 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <GroceryProvider>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </GroceryProvider>
   </React.StrictMode>
 );
+

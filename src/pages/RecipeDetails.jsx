@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getRecipeDetails } from "../api";
+import { useGrocery } from "../context/GroceryContext";
 
 export default function RecipeDetails() {
   const { id } = useParams();
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const { addIngredients } = useGrocery();
 
   useEffect(() => {
     async function fetchDetails() {
@@ -26,6 +28,27 @@ export default function RecipeDetails() {
     }
     if (id) fetchDetails();
   }, [id]);
+
+  const handleAddToGrocery = () => {
+    if (!recipe?.extendedIngredients) return;
+
+    const PRICES = {
+      onion: 0.003,
+      chicken: 0.01,
+      garlic: 0.004,
+      butter: 0.009,
+      salt: 0.002,
+      // Add more as needed
+    };
+
+    const ingredients = recipe.extendedIngredients.map((ing) => ({
+      name: ing.name.toLowerCase(),
+      weight: ing.amount * 100, // assuming 1 unit = 100g
+      price: (ing.amount * 100) * (PRICES[ing.name.toLowerCase()] || 0),
+    }));
+
+    addIngredients(ingredients);
+  };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div className="text-red-500">{error}</div>;
@@ -48,7 +71,7 @@ export default function RecipeDetails() {
         />
       )}
       <p className="text-gray-700 mb-4">
-        <strong>Servings:</strong> {recipe.servings} &nbsp;|&nbsp; 
+        <strong>Servings:</strong> {recipe.servings} &nbsp;|&nbsp;
         <strong>Ready in:</strong> {recipe.readyInMinutes} minutes
       </p>
 
@@ -61,16 +84,22 @@ export default function RecipeDetails() {
               <li key={ing.id}>{ing.original}</li>
             ))}
           </ul>
+
+          <button
+            onClick={handleAddToGrocery}
+            className="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition"
+          >
+            ➕ Add to Grocery List
+          </button>
         </section>
       )}
 
-      {/* Instructions: step-by-step (analyzedInstructions) */}
+      {/* Instructions */}
       {recipe.analyzedInstructions && recipe.analyzedInstructions.length > 0 ? (
         <section className="mb-6">
           <h3 className="text-xl font-semibold mb-2">Instructions</h3>
           {recipe.analyzedInstructions.map((instr, idx) => (
             <div key={idx} className="mb-4">
-              {/* Some recipes have a name for instruction sets (like "Sauce" or "Pasta") */}
               {instr.name && <h4 className="font-semibold">{instr.name}</h4>}
               <ol className="list-decimal list-inside space-y-1">
                 {instr.steps.map((step) => (
@@ -81,7 +110,6 @@ export default function RecipeDetails() {
           ))}
         </section>
       ) : (
-        // If no analyzedInstructions, fall back to plain HTML instructions
         <section className="mb-6">
           <h3 className="text-xl font-semibold mb-2">Instructions</h3>
           {recipe.instructions ? (
