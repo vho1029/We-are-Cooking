@@ -11,6 +11,7 @@ import "./index.css";
 import Login from "./components/Login";
 import Signup from "./components/Signup";
 import Navbar from "./components/Navbar";
+import UpdateProfile from "./components/UpdateProfile";
 
 // Renamed pages:
 // - RecipesPage is now the renamed Dashboard (originally Dashboard.jsx, renamed to Recipes.jsx)
@@ -21,7 +22,6 @@ import MealPlanPage from "./pages/MealPlan";
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import RecipeDetails from "./pages/RecipeDetails";
-import PantryPage from "./pages/Pantry";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -71,11 +71,11 @@ function App() {
 
           {/* Main pages */}
           <Route path="/recipes" element={<RecipesPage userData={userData} />} />
-          <Route path="/mealplan" element={<MealPlanPage userData={userData}/>} />
-          <Route path="/favorites" element={<Favorites userData={userData}/>} />
-          <Route path="/pantry" element={<PantryPage userData={userData} />} />
+          <Route path="/mealplan" element={<MealPlanPage />} />
+          <Route path="/favorites" element={<Favorites />} />
           <Route path="/profile" element={<Profile userData={userData} />} />
           <Route path="/recipe/:id" element={<RecipeDetails />} />
+          <Route path="/update-profile" element={<UpdateProfile />} />
 
           {/* Catch-all: If no route matches, go to /recipes */}
           <Route path="*" element={<Navigate to="/recipes" />} />
