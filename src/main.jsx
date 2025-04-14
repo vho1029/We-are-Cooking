@@ -1,4 +1,4 @@
-import { GroceryProvider } from "./context/GroceryContext";
+import { GroceryProvider } from "./context/GroceryContext.jsx";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom"; // Import BrowserRouter

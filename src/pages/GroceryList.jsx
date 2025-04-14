@@ -2,10 +2,19 @@ import { useGrocery } from "../context/GroceryContext";
 
 export default function GroceryList() {
   const {
-    groceryList,
+    groceryList = [],
     deleteIngredient,
     clearGroceryList,
-  } = useGrocery();
+  } = useGrocery() || {};
+
+  // If context is undefined (fails to load), show fallback
+  if (!useGrocery) {
+    return (
+      <div className="p-4">
+        <h2 className="text-xl text-red-600">Grocery context failed to load.</h2>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 max-w-2xl mx-auto">
@@ -22,8 +31,7 @@ export default function GroceryList() {
                 className="flex justify-between items-center p-3 bg-white shadow rounded border"
               >
                 <span>
-                  <strong>{item.name}</strong>: {item.weight}g — $
-                  {item.price.toFixed(2)}
+                  <strong>{item.name}</strong>: {item.weight}g — ${item.price.toFixed(2)}
                 </span>
                 <button
                   onClick={() => deleteIngredient(item.id)}

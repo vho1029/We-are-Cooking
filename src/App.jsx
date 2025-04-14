@@ -1,10 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
-
-// React Router imports
 import { Routes, Route, Navigate } from "react-router-dom";
 
-// Global styles
 import "./index.css";
 
 // Components & Pages
@@ -13,15 +10,12 @@ import Signup from "./components/Signup";
 import Navbar from "./components/Navbar";
 import UpdateProfile from "./components/UpdateProfile";
 
-// Renamed pages:
-// - RecipesPage is now the renamed Dashboard (originally Dashboard.jsx, renamed to Recipes.jsx)
 import RecipesPage from "./pages/Recipes";
-// - MealPlanPage is now the renamed original Recipes page (renamed to MealPlan.jsx)
 import MealPlanPage from "./pages/MealPlan";
-
 import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import RecipeDetails from "./pages/RecipeDetails";
+import GroceryList from "./pages/GroceryList"; // ✅ Grocery list page
 
 function App() {
   const [session, setSession] = useState(null);
@@ -32,13 +26,11 @@ function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
-        // Use session.user for user details
         setUserData(session.user);
-        // Also save to sessionStorage if desired
         sessionStorage.setItem("user", JSON.stringify(session.user));
       }
     });
-  
+
     const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session) {
@@ -49,46 +41,36 @@ function App() {
         sessionStorage.removeItem("user");
       }
     });
-  
+
     return () => {
       authListener?.subscription?.unsubscribe();
     };
   }, []);
-  
 
   if (session) {
-    // Logged In: Show Navbar + Pages
     return (
       <div className="container mx-auto p-4">
-        <h1 className="text-3xl font-bold">Meal Prep & Recipe App</h1>
-        {/* Navbar for navigation */}
+        <h1 className="text-3xl font-bold mb-4">Meal Prep & Recipe App</h1>
         <Navbar />
 
-        {/* Define routes for your app */}
         <Routes>
-          {/* Redirect / to /recipes */}
           <Route path="/" element={<Navigate to="/recipes" />} />
-
-          {/* Main pages */}
           <Route path="/recipes" element={<RecipesPage userData={userData} />} />
           <Route path="/mealplan" element={<MealPlanPage />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/profile" element={<Profile userData={userData} />} />
           <Route path="/recipe/:id" element={<RecipeDetails />} />
           <Route path="/update-profile" element={<UpdateProfile />} />
-
-          {/* Catch-all: If no route matches, go to /recipes */}
+          <Route path="/grocerylist" element={<GroceryList />} />
           <Route path="*" element={<Navigate to="/recipes" />} />
         </Routes>
       </div>
     );
   }
 
-  // Not Logged In: Show Auth Forms
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold">Meal Prep & Recipe App</h1>
-      {/* <h2 className="text-4xl text-green-600 font-bold mt-4">Tailwind is working!</h2> */}
+      <h1 className="text-3xl font-bold mb-4">Meal Prep & Recipe App</h1>
       {showLogin ? <Login /> : <Signup />}
       <button
         className="mt-4 text-blue-500 underline"

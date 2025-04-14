@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { getRecipeDetails } from "../api";
 import { Link } from "react-router-dom";
-import { FaHeart } from "react-icons/fa"; // ✅ Heart icon instead of star
+import { FaHeart } from "react-icons/fa"; // ✅ Heart icon
 
 export default function Favorites() {
   const [favorites, setFavorites] = useState([]);
@@ -23,11 +23,20 @@ export default function Favorites() {
         return;
       }
 
+      // ✅ Force recipe_id to Number before passing to API
       const recipes = await Promise.all(
-        data.map((entry) => getRecipeDetails(entry.recipe_id))
+        data.map(async (entry) => {
+          try {
+            const recipe = await getRecipeDetails(Number(entry.recipe_id));
+            return recipe;
+          } catch (err) {
+            console.error("Failed to fetch recipe:", entry.recipe_id, err);
+            return null;
+          }
+        })
       );
 
-      setFavorites(recipes.filter(Boolean));
+      setFavorites(recipes.filter((r) => r && r.title));
       setLoading(false);
     };
 
@@ -46,7 +55,7 @@ export default function Favorites() {
 
     if (!error) {
       setFavorites((prev) =>
-        prev.filter((recipe) => recipe.id !== parseInt(recipeId))
+        prev.filter((recipe) => recipe.id !== Number(recipeId))
       );
     } else {
       console.error("Failed to remove favorite:", error.message);
