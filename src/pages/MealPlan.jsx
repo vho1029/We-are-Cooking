@@ -39,6 +39,7 @@ const MealPlanPage = ({ userData }) => {
           `https://api.spoonacular.com/recipes/informationBulk?ids=${uniqueRecipeIds.join(",")}&apiKey=e035ff36a0824d768ead204d0104ec67`
         );
         const recipes = await response.json();
+        console.log(recipes); 
         const recipeMap = {};
         recipes.forEach(recipe => {
           recipeMap[recipe.id] = recipe;
