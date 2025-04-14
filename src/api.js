@@ -95,7 +95,7 @@ export const saveRecipeToSupabase = async (recipe, totalPrice) => {
         return null;
       }
 
-      return data.recipe_id;
+      return data?.[0]?.recipe_id || null;
     }
   } catch (error) {
     console.error('Unexpected error saving recipe:', error);
@@ -383,16 +383,25 @@ export const getKrogerAuthAndLocationId = async () => {
 
 
 export const getIngredientPrices = async (ingredients) => {
-  const ingredientTexts = ingredients.map(ingredient => `${ingredient.amount} ${ingredient.unit} of ${ingredient.name}`).join("\n");
+  //const ingredientTexts = ingredients.map(ingredient => `${ingredient.amount} ${ingredient.unit} of ${ingredient.name}`).join("\n");
 
   try {
     // Use Gemini to parse and convert all ingredients to grams in one call
-    const parsedIngredients = await parseIngredientsWithGemini(ingredientTexts);
+    const parsedIngredients = await parseIngredientsWithGemini(
+      ingredients.map(i => ({
+        name: i.name,
+        amount: i.amount,
+        unit: i.unit || i.measures?.metric?.unitLong || ""
+      }))
+    );
     
     // Check if Gemini returned valid parsed ingredients
     console.log("Parsed Ingredients:", parsedIngredients);
     if (!parsedIngredients || parsedIngredients.length !== ingredients.length) {
-      return ingredients.map(ingredient => ({ name: ingredient.name, error: "Error parsing ingredient with Gemini" }));
+      return ingredients.map(ingredient => ({ 
+        name: ingredient.name, 
+        error: "Error parsing ingredient with Gemini" 
+      }));
     }
     const { token, locationId } = await getKrogerAuthAndLocationId();
     if (!token || !locationId) {
@@ -400,9 +409,10 @@ export const getIngredientPrices = async (ingredients) => {
     }
     // Proceed with fetching price data using the parsed ingredients
     const priceData = await Promise.all(parsedIngredients.map(async (parsedIngredient, index) => {
-      const { name: parsedName, amount: parsedAmount, unit: parsedUnit } = parsedIngredient;
+      const ingredientName = ingredients[index].name;
+      const amountInGrams = parsedIngredient.amount;
       const response = await fetch(
-        `/api/v1/products?filter.term=${encodeURIComponent(parsedName)}&filter.locationId=${locationId}`,
+        `/api/v1/products?filter.term=${encodeURIComponent(ingredientName)}&filter.locationId=${locationId}`,
         {
           method: "GET",
           headers: {
@@ -413,36 +423,49 @@ export const getIngredientPrices = async (ingredients) => {
       );
       const data = await response.json();
       const krogerItem = data.data?.[0];
-      console.log("First Kroger item for", parsedName, data.data[0]);
+      if (!krogerItem || !krogerItem.items?.length) {
+        return { name: ingredientName, error: "No Kroger match found" };
+      }
+      console.log("First Kroger item for", ingredientName, data.data[0]);
       // Log the price API response to debug
-      console.log(`Price API Response for ${parsedName}:`, data);
+      const item = krogerItem.items[0];
+      const name = krogerItem.description;
+      const price = item.price?.regular;
+      const size = item.size;
+
+      if (!price || !size) {
+        return { name: ingredientName, error: "Missing price/size info" };
+      }
 
       if (krogerItem && krogerItem.items?.length > 0) {
-        const itemDetails = krogerItem.items[0];
-        const name = krogerItem.description;
-        const price = itemDetails.price?.regular;
-        const size = itemDetails.size;
 
         if (!price || !size) {
-          return { name: parsedName, error: "Missing price or size info" };
+          return { name: name, error: "Missing price or size info" };
         }
-
+        console.log(`${ingredientName} found price at Kroger for ${price}`);
+        console.log(`${ingredientName} the number sent to gemini is ${ingredients[index].amount} and in unit ${ingredients[index].unit}`);
+        console.log(`${ingredientName} parsed amount in grams:`, amountInGrams);
+        console.log(`${ingredientName} the size found at kroger is ${size}`);
         // Pass the relevant Kroger details to gemini
-        const parsedFromKroger = await parseKrogerIngredientsWithGemini({
-          name,
-          price,
-          size,
+        const { pricePerGram, caloriesPerGram } = await parseKrogerIngredientsWithGemini({
+          name: name,
+          price: price,
+          size: size,
         });
-        const estimatedPrice = parsedFromKroger.pricePerGram * parsedAmount;
+        console.log(`${ingredientName} Returned Price per Gram ${pricePerGram}`);
+        console.log(`${ingredientName} Returned Calories per Gram ${caloriesPerGram}`);
+        const estimatedPrice = pricePerGram * amountInGrams;
+        console.log(`${ingredientName} Estimated price is: ${estimatedPrice}`);
         return {
-          name: parsedFromKroger.name,
+          name: ingredientName,
           krogerId: krogerItem.productId,
-          amountInGrams: parsedAmount,
+          amountInGrams: amountInGrams,
           estimatedPrice: estimatedPrice, // Calculated based on weight and price
-          caloriesPerGram: parsedFromKroger.caloriesPerGram,
+          caloriesPerGram: caloriesPerGram,
+          pricePerGram: pricePerGram,
         };
       }
-      return { name: parsedName, error: "No data found" };
+      return { name: ingredientName, error: "No data found" };
     }));
 
     return priceData;
@@ -452,21 +475,24 @@ export const getIngredientPrices = async (ingredients) => {
   }
 };
 
-export const parseIngredientsWithGemini = async (ingredientsText) => {
-  const prompt = `Parse the following ingredient descriptions into structured JSON. 
-Each ingredient should have: name, amount (in grams), and unit: "g". 
-Try to keep the names simple, eg "deskinned, boneless chicken breasts" converts to "chicken breasts", remove braning but preserve ingredient type, eg "Kraft Recipe Makers Chicken Bruschetta Pasta" converts to "Chicken Bruschetta Pasta"
-Convert all quantities to grams based on the ingredient and unit.
-Return an array of JSON objects. Do not include any explanation or text before or after the JSON.
+export const parseIngredientsWithGemini = async (ingredients) => {
+  const formattedIngredients = JSON.stringify(ingredients, null, 2);
 
-Input:
-${ingredientsText}
-
-Example input: "2 cups of chopped onions"
-Example output: [{"name": "onion", "amount": 300, "unit": "g"}]
-
-Input:
-${ingredientsText}`;
+  const prompt = `Parse the following ingredient descriptions into structured JSON.
+  Each ingredient should have: 
+  - "name" (as-is, do not simplify),
+  - "amount" (in grams only).
+  
+  Convert all quantities to grams based on the ingredient and unit. 
+  If no unit or ambiguous quantity is provided, infer a realistic cooking amount for a single recipe, assume it is a serving size amount
+  Return ONLY a valid JSON array, no explanations, no comments, no markdown.
+  
+  Input:
+  ${formattedIngredients}
+  
+  Example input: [{"name": "olive oil", "amount": "1", "unit": "tbsp"}]
+  Example output: [{"name": "olive oil", "amount": 13}]`;
+  
 
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
@@ -501,47 +527,40 @@ ${ingredientsText}`;
 
 export const parseKrogerIngredientsWithGemini = async ({ name, price, size }) => {
   const prompt = `
-    Simplify the name to the best possible, but if it is a branded ingredient remove branding but preserve the ingredient type (e.g., "boneless, skinless chicken breasts" → "chicken breasts" but for branded ingredients "Kraft Recipe Makers Chicken Bruschetta Pasta" -> "Chicken Bruschetta Pasta"):\n\n${name}
-    \n\n
-    Given the following size/quantity information, extract and return the weight in grams (e.g., "2 lb" → 907 grams, "12 oz" → 340 grams):\n\n${size}
-    \n\n
-    Estimate the calories per gram for the following food item based on common nutritional knowledge:\n\n${name}
-    \n\n
-    Return only the simplified name, weight in grams, and estimated calories per gram in the following format:
-    \n\n
-    Simplified Name: [simplified name]
-    Weight in Grams: [weight in grams]
-    Calories per Gram: [calories per gram]
-  `;
+Given the following size/quantity information, estimate the total weight in grams (e.g., "2 lb" → 907 grams, "12 oz" → 340 grams):\n\n${size}
+
+Based on common nutritional knowledge, estimate the calories per gram for the following food item:\n\n${name}
+
+Return only the weight in grams and estimated calories per gram in the following format:
+
+Weight in Grams: [weight in grams]
+Calories per Gram: [calories per gram]
+`;
 
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }], 
+      contents: [{ parts: [{ text: prompt }] }],
     }),
   });
 
   const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
-  // Parse the response from Gemini and extract relevant details
-  const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const [simplifiedNameLine, weightLine, caloriesLine] = responseText.split('\n').map(line => line.trim());
-
-  const simplifiedName = simplifiedNameLine.replace('Simplified Name: ', '').trim();
+  const [weightLine, caloriesLine] = text.split("\n").map(line => line.trim());
   const weightInGrams = parseFloat(weightLine.replace('Weight in Grams: ', '').trim()) || 0;
   const caloriesPerGram = parseFloat(caloriesLine.replace('Calories per Gram: ', '').trim()) || 0;
 
-  // Calculate price per gram
   const pricePerGram = weightInGrams > 0 ? price / weightInGrams : 0;
-  console.log(`Simplified Name for Kroger Item is ${simplifiedName}`);
-  console.log(`Weight In grams for Kroger Item is ${weightInGrams}`);
-  console.log(`Calories in grams for Kroger Item is ${caloriesPerGram}`);
+
+  /*
+  console.log(`Weight in grams: ${weightInGrams}`);
+  console.log(`Calories per gram: ${caloriesPerGram}`);
+  console.log(`Price per gram: ${pricePerGram}`);
+  */
   return {
-    name: simplifiedName,
     pricePerGram,
     caloriesPerGram,
   };
 };
-
-

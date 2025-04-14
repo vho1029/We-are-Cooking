@@ -1,7 +1,7 @@
 //import React, { useState } from "react";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
-import { getRecipeIngredients, getIngredientPrices, insertIngredient, insertPantryItem, getRecipeDetails, addMealPlan, saveRecipeToSupabase } from "../api";
+import { getIngredientPrices, insertIngredient, insertPantryItem, getRecipeDetails, addMealPlan, saveRecipeToSupabase } from "../api";
 
 const MealPlanButton = ({ recipeId, userId }) => {
   const [mealType, setMealType] = useState("breakfast");
@@ -33,22 +33,26 @@ const MealPlanButton = ({ recipeId, userId }) => {
       const pricedIngredients = await getIngredientPrices(rawIngredients);
       console.log("Finished fetching ingredient pricing");
       let totalPrice = 0;
+      if (recipe.extendedIngredients && pricedIngredients.length === recipe.extendedIngredients.length) {
+        recipe.extendedIngredients = recipe.extendedIngredients.map((ingredient, i) => ({
+          ...ingredient,
+          estimatedPrice: pricedIngredients[i].estimatedPrice
+        }));
+      }
       for (let i = 0; i < pricedIngredients.length; i++) {
         const item = pricedIngredients[i];
         const quantity = item.amountInGrams;
         const price = item.estimatedPrice || 0;
         const ingredientName = rawIngredients[i]?.name || "Unnamed ingredient";
-        const unit = "g"; // assuming grams
+        const unit = "g";
         const caloriesPerUnit = item.caloriesPerGram || 0;
-        const pricePerUnit = (price / quantity) || 0;
-        const externalId = item.krogerId || null; // external_id
+        const pricePerUnit = item.pricePerGram || 0;
+        const externalId = item.krogerId || null;
         const spoonacularId = rawIngredients[i]?.id;
-        totalPrice += price;
-        console.log("Ingredient data:", item);
-        console.log("Price per unit:", pricePerUnit);
 
+        totalPrice += price;
         const ingredientId = await insertIngredient({ingredientName, unit, caloriesPerUnit, pricePerUnit, externalId, spoonacularId});
-        await insertPantryItem({userId, ingredientId, ingredientName, quantity, unit, price, externalId, spoonacularId, recipeId});
+        await insertPantryItem({userId, ingredientId, ingredientName, quantity, unit, price, externalId, spoonacularId, spoonacularRecipeId: recipeId});
       }
       const recipeDbId = await saveRecipeToSupabase(recipe, totalPrice);
       await addMealPlan({userId, recipeId, mealType, scheduledDate, recipeDbId});
