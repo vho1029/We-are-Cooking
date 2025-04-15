@@ -1,149 +1,223 @@
-import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { getRecipeDetails } from "../api";
-import { getIngredientPrices } from "../api";
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import { getRecipeDetails, getIngredientPrices, saveRecipeToSupabase } from '../api';
+import AddToPantryButton from '../components/AddToPantryButton';
+import { supabase } from '../supabaseClient';
 
-
-export default function RecipeDetails() {
+const RecipeDetails = () => {
   const { id } = useParams();
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [userData, setUserData] = useState(null);
+  const [totalPrice, setTotalPrice] = useState(0);
   const [ingredientPrices, setIngredientPrices] = useState([]);
-
+  const [priceLoading, setPriceLoading] = useState(false);
 
   useEffect(() => {
-    async function fetchDetails() {
+    // Get user data from session storage
+    const storedUser = sessionStorage.getItem('user');
+    if (storedUser) {
+      setUserData(JSON.parse(storedUser));
+    }
+
+    const fetchRecipeDetails = async () => {
+      setLoading(true);
       try {
         const data = await getRecipeDetails(id);
-        if (!data || data.status === "failure") {
-          setError("No recipe details found.");
-        } else {
-          setRecipe(data);
-          if (data.extendedIngredients) {
-            const priceData = await getIngredientPrices(data.extendedIngredients);
-            setIngredientPrices(priceData);
-          }          
-        }
-      } catch (err) {
-        console.error("Error fetching recipe details:", err);
-        setError("Error fetching recipe details.");
+        setRecipe(data);
+        
+        // After getting recipe details, fetch price data
+        setPriceLoading(true);
+        const prices = await getIngredientPrices(data.extendedIngredients);
+        setIngredientPrices(prices);
+        
+        // Calculate total price
+        const calculatedTotal = prices.reduce((sum, item) => {
+          return sum + (item.estimatedPrice || 0);
+        }, 0);
+        setTotalPrice(calculatedTotal);
+        
+        // Save recipe with price to Supabase
+        await saveRecipeToSupabase(data, calculatedTotal);
+        
+        setPriceLoading(false);
+      } catch (error) {
+        console.error('Error fetching recipe details:', error);
       } finally {
         setLoading(false);
       }
+    };
+
+    if (id) {
+      fetchRecipeDetails();
     }
-    if (id) fetchDetails();
   }, [id]);
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
-  if (!recipe) return <div>No recipe details available.</div>;
+  // Function to get price info for an ingredient
+  const getIngredientPriceInfo = (ingredient) => {
+    const priceInfo = ingredientPrices.find(item => item.name === ingredient.name);
+    return priceInfo;
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
+  if (loading) {
+    return <div className="text-center p-8">Loading recipe details...</div>;
+  }
+
+  if (!recipe) {
+    return <div className="text-center p-8">Recipe not found.</div>;
+  }
+
+  // Remove HTML tags from summary
+  const cleanSummary = recipe.summary?.replace(/<\/?[^>]+(>|$)/g, '');
 
   return (
-    <div className="p-4 max-w-3xl mx-auto">
-      {/* Back to Recipes Link */}
-      <Link to="/Dashboard" className="text-blue-600 hover:underline">
-        &larr; Back to Recipes
-      </Link>
+    <div className="max-w-4xl mx-auto p-4">
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        {/* Recipe Header */}
+        <div className="relative">
+          {recipe.image && (
+            <img 
+              src={recipe.image} 
+              alt={recipe.title} 
+              className="w-full h-64 object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end">
+            <div className="p-6 text-white">
+              <h1 className="text-2xl md:text-3xl font-bold">{recipe.title}</h1>
+              <div className="flex items-center mt-2 space-x-4">
+                <span className="flex items-center">
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 100-12 6 6 0 000 12z" clipRule="evenodd" />
+                  </svg>
+                  {recipe.readyInMinutes} min
+                </span>
+                <span className="flex items-center">
+                  <svg className="w-5 h-5 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                  </svg>
+                  {recipe.servings} servings
+                </span>
+                {totalPrice > 0 && (
+                  <span className="flex items-center font-semibold">
+                    {formatCurrency(totalPrice)} total
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
 
-      {/* Title, Image, Basic Info */}
-      <h2 className="text-3xl font-bold mt-4 mb-2">{recipe.title}</h2>
-      {recipe.image && (
-        <img
-          src={recipe.image}
-          alt={recipe.title}
-          className="w-full max-w-md mb-4"
-        />
-      )}
-      <p className="text-gray-700 mb-4">
-        <strong>Servings:</strong> {recipe.servings} &nbsp;|&nbsp; 
-        <strong>Ready in:</strong> {recipe.readyInMinutes} minutes
-      </p>
+        {/* Recipe Content */}
+        <div className="p-6">
+          {/* Summary */}
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-2">About</h2>
+            <p className="text-gray-700">{cleanSummary}</p>
+          </div>
 
-      {/* Ingredients */}
-      {recipe.extendedIngredients && (
-        <section className="mb-6">
-          <h3 className="text-xl font-semibold mb-2">Ingredients</h3>
-          <ul className="list-disc list-inside">
-            {recipe.extendedIngredients.map((ing, idx) => {
-              const priceInfo = ingredientPrices[idx]; // Match by index
-              return (
-                <li key={ing.id}>
-                  {ing.original}
-                  {priceInfo && priceInfo.estimatedPrice ? (
-                    <span className="text-sm text-gray-600"> — ${priceInfo.estimatedPrice.toFixed(2)}</span>
-                  ) : (
-                    <span className="text-sm text-gray-600"> — Price unavailable</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </section>
-      )}
+          {/* Ingredients with Add to Pantry button */}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-3">Ingredients</h2>
+            <div className="space-y-3">
+              {recipe.extendedIngredients.map((ingredient, index) => {
+                const priceInfo = getIngredientPriceInfo(ingredient);
+                
+                // Merge price info with ingredient if available
+                const enrichedIngredient = priceInfo ? {
+                  ...ingredient,
+                  estimatedPrice: priceInfo.estimatedPrice,
+                  amountInGrams: priceInfo.amountInGrams,
+                  caloriesPerGram: priceInfo.caloriesPerGram,
+                  pricePerGram: priceInfo.pricePerGram,
+                  krogerId: priceInfo.krogerId,
+                  error: priceInfo.error
+                } : ingredient;
+                
+                return (
+                  <div 
+                    key={`${ingredient.id || ingredient.name}-${index}`} 
+                    className="flex justify-between items-center py-3 px-4 border rounded-lg bg-gray-50"
+                  >
+                    <div>
+                      <h3 className="font-medium text-gray-800">{ingredient.name}</h3>
+                      <p className="text-sm text-gray-600">
+                        {ingredient.amount} {ingredient.unit}
+                      </p>
+                      
+                      {/* Display price if available */}
+                      {priceInfo?.estimatedPrice && (
+                        <p className="text-sm font-semibold text-green-600 mt-1">
+                          {formatCurrency(priceInfo.estimatedPrice)}
+                        </p>
+                      )}
+                      
+                      {/* Display error if there was a pricing issue */}
+                      {priceInfo?.error && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {priceInfo.error}
+                        </p>
+                      )}
+                    </div>
+                    
+                    {/* Add to Pantry button */}
+                    <AddToPantryButton 
+                      ingredient={enrichedIngredient} 
+                      userId={userData?.id} 
+                      recipeId={recipe.id}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
 
-      {/* Instructions: step-by-step (analyzedInstructions) */}
-      {recipe.analyzedInstructions && recipe.analyzedInstructions.length > 0 ? (
-        <section className="mb-6">
-          <h3 className="text-xl font-semibold mb-2">Instructions</h3>
-          {recipe.analyzedInstructions.map((instr, idx) => (
-            <div key={idx} className="mb-4">
-              {/* Some recipes have a name for instruction sets (like "Sauce" or "Pasta") */}
-              {instr.name && <h4 className="font-semibold">{instr.name}</h4>}
-              <ol className="list-decimal list-inside space-y-1">
-                {instr.steps.map((step) => (
-                  <li key={step.number}>{step.step}</li>
+          {/* Instructions */}
+          <div className="mt-8">
+            <h2 className="text-xl font-semibold mb-3">Instructions</h2>
+            {recipe.analyzedInstructions && recipe.analyzedInstructions.length > 0 ? (
+              <ol className="list-decimal list-inside space-y-2 text-left">
+                {recipe.analyzedInstructions[0].steps.map((step) => (
+                  <li key={step.number} className="ml-4 pl-2 text-gray-700">
+                    <span className="font-medium">{step.number}.</span> {step.step}
+                  </li>
                 ))}
               </ol>
+            ) : (
+              <p className="text-gray-500">No instructions available.</p>
+            )}
+          </div>
+
+          {/* Nutrition Info */}
+          {recipe.nutrition && (
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-3">Nutrition</h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {recipe.nutrition.nutrients.slice(0, 8).map((nutrient) => (
+                  <div key={nutrient.name} className="bg-gray-50 p-3 rounded-lg">
+                    <p className="text-sm text-gray-500">{nutrient.name}</p>
+                    <p className="text-lg font-semibold">
+                      {nutrient.amount} {nutrient.unit}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </section>
-      ) : (
-        // If no analyzedInstructions, fall back to plain HTML instructions
-        <section className="mb-6">
-          <h3 className="text-xl font-semibold mb-2">Instructions</h3>
-          {recipe.instructions ? (
-            <div
-              className="prose"
-              dangerouslySetInnerHTML={{ __html: recipe.instructions }}
-            />
-          ) : (
-            <p>No instructions provided.</p>
           )}
-        </section>
-      )}
-
-      {/* Nutrition Info */}
-      {recipe.nutrition && recipe.nutrition.nutrients && (
-        <section className="mb-6">
-          <h3 className="text-xl font-semibold mb-2">Nutrition (Per Serving)</h3>
-          <ul className="list-disc list-inside">
-            {recipe.nutrition.nutrients.map((nutrient) => (
-              <li key={nutrient.name}>
-                {nutrient.name}: {nutrient.amount}
-                {nutrient.unit} ({nutrient.percentOfDailyNeeds}% DV)
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Wine Pairing */}
-      {recipe.winePairing && recipe.winePairing.pairedWines && (
-        <section className="mb-6">
-          <h3 className="text-xl font-semibold mb-2">Wine Pairing</h3>
-          <p>{recipe.winePairing.pairingText}</p>
-          {recipe.winePairing.productMatches && (
-            <ul className="list-disc list-inside mt-2">
-              {recipe.winePairing.productMatches.map((wine) => (
-                <li key={wine.id}>
-                  <strong>{wine.title}</strong> - {wine.description}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      )}
+        </div>
+      </div>
     </div>
   );
-}
+};
+
+export default RecipeDetails;
