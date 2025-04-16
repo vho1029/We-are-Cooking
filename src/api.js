@@ -381,104 +381,6 @@ export const getKrogerAuthAndLocationId = async () => {
   }
 };
 
-/*
-export const getIngredientPrices = async (ingredients) => {
-  //const ingredientTexts = ingredients.map(ingredient => `${ingredient.amount} ${ingredient.unit} of ${ingredient.name}`).join("\n");
-
-  try {
-    // Use Gemini to parse and convert all ingredients to grams in one call
-    const parsedIngredients = await parseIngredientsWithGemini(
-      ingredients.map(i => ({
-        name: i.name,
-        amount: i.amount,
-        unit: i.unit || i.measures?.metric?.unitLong || ""
-      }))
-    );
-    
-    // Check if Gemini returned valid parsed ingredients
-    console.log("Parsed Ingredients:", parsedIngredients);
-    if (!parsedIngredients || parsedIngredients.length !== ingredients.length) {
-      return ingredients.map(ingredient => ({ 
-        name: ingredient.name, 
-        error: "Error parsing ingredient with Gemini" 
-      }));
-    }
-    const { token, locationId } = await getKrogerAuthAndLocationId();
-    if (!token || !locationId) {
-      throw new Error("Failed to fetch Kroger token or location ID.");
-    }
-    // Proceed with fetching price data using the parsed ingredients
-    const priceData = await Promise.all(
-      parsedIngredients.map(async (parsedIngredient, index) => {
-      const ingredientName = ingredients[index].name;
-      const amountInGrams = parsedIngredient.amount;
-      const response = await fetch(
-        `/api/v1/products?filter.term=${encodeURIComponent(ingredientName)}&filter.locationId=${locationId}`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      const data = await response.json();
-      const krogerItem = data.data?.[0];
-      if (!krogerItem || !krogerItem.items?.length) {
-        return { name: ingredientName, error: "No Kroger match found" };
-      }
-      console.log("First Kroger item for", ingredientName, data.data[0]);
-      // Log the price API response to debug
-      
-      const item = krogerItem.items[0];
-      const name = item.description;
-      const price = item.price?.regular;
-      const size = item.size;
-
-      if (!price || !size) {
-        return { name: ingredientName, error: "Missing price/size info" };
-      }
-
-      if (krogerItem && krogerItem.items?.length > 0) {
-
-        if (!price || !size) {
-          return { name: name, error: "Missing price or size info" };
-        }
-        console.log(`${ingredientName} found price at Kroger for ${price}`);
-        console.log(`${ingredientName} the number sent to gemini is ${ingredients[index].amount} and in unit ${ingredients[index].unit}`);
-        console.log(`${ingredientName} parsed amount in grams:`, amountInGrams);
-        console.log(`${ingredientName} the size found at kroger is ${size}`);
-        // Pass the relevant Kroger details to gemini
-        const parsedKrogerItems = await parseKrogerIngredientsWithGemini(
-          krogerItems.map(k => ({
-            name: k.description,
-            price: k.items?.[0]?.price?.regular,
-            size: k.items?.[0]?.size,
-          }))
-        );
-        console.log(`${ingredientName} Returned Price per Gram ${pricePerGram}`);
-        console.log(`${ingredientName} Returned Calories per Gram ${caloriesPerGram}`);
-        const estimatedPrice = pricePerGram * amountInGrams;
-        console.log(`${ingredientName} Estimated price is: ${estimatedPrice}`);
-        return {
-          name: ingredientName,
-          krogerId: krogerItem.productId,
-          amountInGrams: amountInGrams,
-          estimatedPrice: estimatedPrice, // Calculated based on weight and price
-          caloriesPerGram: caloriesPerGram,
-          pricePerGram: pricePerGram,
-        };
-      }
-      return { name: ingredientName, error: "No data found" };
-    }));
-
-    return priceData;
-  } catch (error) {
-    console.error("Error fetching prices:", error);
-    return ingredients.map(ingredient => ({ name: ingredient.name, error: "Fetch error" }));
-  }
-};
-*/
 
 export const getIngredientPrices = async (ingredients) => {
   try {
@@ -490,6 +392,8 @@ export const getIngredientPrices = async (ingredients) => {
         unit: i.unit || i.measures?.metric?.unitLong || ""
       }))
     );
+
+    console.log("Mapped Ingredients:", parsedIngredients);
 
     if (!parsedIngredients || parsedIngredients.length !== ingredients.length) {
       return ingredients.map(ingredient => ({
@@ -535,6 +439,47 @@ export const getIngredientPrices = async (ingredients) => {
       })
     );
 
+    console.log("Kroger Raw Data:", krogerRawData);
+
+    const failedLookups = krogerRawData.filter(item => item.error);
+
+  // Retry with simplified names
+    const retries = await Promise.all(
+      failedLookups.map(async (fail) => {
+        const simplifiedName = parsedIngredients[fail.ingredientIndex].simplified;
+
+        const response = await fetch(
+          `/api/v1/products?filter.term=${encodeURIComponent(simplifiedName)}&filter.locationId=${locationId}`,
+          {
+            method: "GET",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+        const data = await response.json();
+        const krogerItem = data.data?.[0];
+        const item = krogerItem?.items?.[0];
+
+        return {
+          ingredientIndex: fail.ingredientIndex,
+          ingredientName: simplifiedName, // used simplified name here
+          amountInGrams: parsedIngredients[fail.ingredientIndex].amount,
+          krogerId: krogerItem?.productId,
+          name: krogerItem?.description,
+          price: item?.price?.regular,
+          size: item?.size,
+          error: (!krogerItem || !item?.price?.regular || !item?.size) ? "Missing price or size info" : null
+        };
+      })
+    );
+
+    // Replace failed entries with retried ones
+    for (const retry of retries) {
+      krogerRawData[retry.ingredientIndex] = retry;
+    }
+
     // Filter valid items for batch Gemini input
     const validItemsForGemini = krogerRawData.filter(item => !item.error);
     const parsedKrogerResults = await parseKrogerIngredientsWithGemini(
@@ -544,6 +489,7 @@ export const getIngredientPrices = async (ingredients) => {
         size: item.size,
       }))
     );
+    console.log("Gemini Parsed Kroger Data:", validItemsForGemini);
     let parsedIndex = 0;
     // Map results back to full result list
     const finalResults = krogerRawData.map((item, index) => {
@@ -555,7 +501,7 @@ export const getIngredientPrices = async (ingredients) => {
       const pricePerGram = item.price / weightInGrams;
       const estimatedPrice = pricePerGram * item.amountInGrams;
       return {
-        name: item.ingredientName,
+        name: ingredients[item.ingredientIndex]?.name || item.ingredientName,
         krogerId: item.krogerId,
         amountInGrams: item.amountInGrams,
         estimatedPrice,
@@ -577,6 +523,7 @@ export const parseIngredientsWithGemini = async (ingredients) => {
   const prompt = `Parse the following ingredient descriptions into structured JSON.
   Each ingredient should have: 
   - "name" (as-is, do not simplify),
+  - "simplfied" (a simplified name that removes branding and unnecessary details like chuck arm steak to chuck steak, if you see multiple ingredients in one name, remove the less expensive one and increase the grams amount to account for the price removal of the additional ingredients in the name)
   - "amount" (in grams only).
   
   Convert all quantities to grams based on the ingredient and unit. 
@@ -587,7 +534,7 @@ export const parseIngredientsWithGemini = async (ingredients) => {
   ${formattedIngredients}
   
   Example input: [{"name": "olive oil", "amount": "1", "unit": "tbsp"}]
-  Example output: [{"name": "olive oil", "amount": 13}]`;
+  Example output: [{"name": "olive oil", "simplified": "olive oil", "amount": 13}]`;
   
 
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
@@ -621,46 +568,6 @@ export const parseIngredientsWithGemini = async (ingredients) => {
   }
 };
 
-/*
-export const parseKrogerIngredientsWithGemini = async ({ name, price, size }) => {
-  const prompt = `
-Given the following size/quantity information, estimate the total weight in grams (e.g., "2 lb" → 907 grams, "12 oz" → 340 grams):\n\n${size}
-
-Based on common nutritional knowledge, estimate the calories per gram for the following food item:\n\n${name}
-
-Return only the weight in grams and estimated calories per gram in the following format:
-
-Weight in Grams: [weight in grams]
-Calories per Gram: [calories per gram]
-`;
-
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-    }),
-  });
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-  const [weightLine, caloriesLine] = text.split("\n").map(line => line.trim());
-  const weightInGrams = parseFloat(weightLine.replace('Weight in Grams: ', '').trim()) || 0;
-  const caloriesPerGram = parseFloat(caloriesLine.replace('Calories per Gram: ', '').trim()) || 0;
-
-  const pricePerGram = weightInGrams > 0 ? price / weightInGrams : 0;
-
-  /*
-  console.log(`Weight in grams: ${weightInGrams}`);
-  console.log(`Calories per gram: ${caloriesPerGram}`);
-  console.log(`Price per gram: ${pricePerGram}`);
-  *//*
-  return {
-    pricePerGram,
-    caloriesPerGram,
-  };
-};*/
 
 export const parseKrogerIngredientsWithGemini = async (items) => {
   const prompt = `
