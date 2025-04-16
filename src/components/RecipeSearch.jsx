@@ -1,6 +1,7 @@
+
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { fetchFilteredRecipes } from "../api";
+import { searchRecipes } from "../services/recipeSearchService";
 import FavoriteButton from "./FavoriteButton";
 import MealPlanButton from "./MealPlanButton";
 
@@ -11,45 +12,48 @@ const RecipeSearch = ({ userData }) => {
   const [mealType, setMealType] = useState("");
   const [recipes, setRecipes] = useState([]);
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-
-    // Build query parameters
-    const params = new URLSearchParams({
-      apiKey: "47479824a9a442f486fb2cd1059d51c0",//"e035ff36a0824d768ead204d0104ec67",
-      query: searchTerm,
-      number: 10,
-    });
-
-    if (diet) params.append("diet", diet);
-    if (cuisine) params.append("cuisine", cuisine);
-    if (mealType) params.append("type", mealType);
-
+    
+    setLoading(true);
+    setMessage("");
+    
     try {
-      const response = await fetch(
-        `https://api.spoonacular.com/recipes/complexSearch?${params.toString()}`
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        setMessage(`API Error: ${data.message || response.status}`);
-        setRecipes([]);
-        return;
-      }
-
-      if (!data.results || data.results.length === 0) {
-        setMessage("No recipes found. Try different filters.");
+      const searchParams = {
+        query: searchTerm,
+        diet: diet,
+        cuisine: cuisine,
+        type: mealType,
+        maxResults: 10
+      };
+      
+      const results = await searchRecipes(searchParams);
+      
+      if (!results || results.length === 0) {
+        setMessage("No recipes found. Try different search terms or filters.");
         setRecipes([]);
       } else {
         setMessage("");
-        setRecipes(data.results);
+        setRecipes(results);
       }
     } catch (error) {
-      console.error("Error fetching recipes:", error);
-      setMessage("Error fetching recipes. Please try again.");
+      console.error("Error searching recipes:", error);
+      setMessage("Error searching recipes. Please try again.");
       setRecipes([]);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount || 0);
   };
 
   return (
@@ -62,7 +66,6 @@ const RecipeSearch = ({ userData }) => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full p-2.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-700"
-          required
         />
         <div className="flex flex-wrap gap-3">
           <select
@@ -101,15 +104,26 @@ const RecipeSearch = ({ userData }) => {
         </div>
         <button 
           type="submit" 
-          className="bg-blue-600 hover:bg-blue-700 text-white py-2.5 px-4 rounded-md transition duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="bg-primary hover:bg-green-600 text-white py-2.5 px-4 rounded-md transition duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          disabled={loading}
         >
-          Search
+          {loading ? "Searching..." : "Search"}
         </button>
       </form>
       {message && <p className="mt-3 text-red-500 font-medium">{message}</p>}
+      {loading && (
+        <div className="mt-4 flex justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        </div>
+      )}
       <div className="mt-6 space-y-4">
         {recipes.map((recipe, index) => (
-          <div key={`${recipe.id}-${index}`} className="border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200">
+          <div 
+            key={`${recipe.id}-${index}`} 
+            className={`border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 ${
+              recipe.isFromLocalDb ? "bg-green-50" : "bg-white"
+            }`}
+          >
             <h3 className="font-bold text-lg text-gray-800">{recipe.title}</h3>
             {recipe.image && (
               <img
@@ -117,6 +131,23 @@ const RecipeSearch = ({ userData }) => {
                 alt={recipe.title}
                 className="w-32 h-32 object-cover mt-2 rounded-md"
               />
+            )}
+            {/* Display recipe details */}
+            <div className="mt-2 text-sm text-gray-600">
+              <span className="mr-4">Ready in {recipe.readyInMinutes} min</span>
+              <span>Servings: {recipe.servings}</span>
+            </div>
+            {/* Display recipe price if available */}
+            {recipe.totalPrice > 0 && (
+              <p className="mt-2 font-semibold text-green-600">
+                {formatCurrency(recipe.totalPrice)}
+              </p>
+            )}
+            {/* Show badge for cached recipes */}
+            {recipe.isFromLocalDb && (
+              <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-2">
+                Cached Recipe
+              </span>
             )}
             <div className="flex items-center justify-between mt-3">
               <FavoriteButton recipeId={recipe.id} userId={userData?.id} />

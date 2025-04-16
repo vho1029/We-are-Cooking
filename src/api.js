@@ -1,4 +1,4 @@
-const API_KEY = "47479824a9a442f486fb2cd1059d51c0";//e035ff36a0824d768ead204d0104ec67";
+const API_KEY = "40f858dc01194ff0be5de594313a0c5f";
 const BASE_URL = "https://api.spoonacular.com";
 const PRICE_API_KEY = "PedilSvPc1gJkpZDvz2opYdfQvrPokjI8xLdk0pU";
 const PRICE_BASE_URL = "https://api.nal.usda.gov/fdc/v1";

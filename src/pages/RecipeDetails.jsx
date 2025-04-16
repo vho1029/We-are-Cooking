@@ -189,7 +189,7 @@ const RecipeDetails = () => {
               <ol className="list-decimal list-inside space-y-2 text-left">
                 {recipe.analyzedInstructions[0].steps.map((step) => (
                   <li key={step.number} className="ml-4 pl-2 text-gray-700">
-                    <span className="font-medium">{step.number}.</span> {step.step}
+                    {step.step}
                   </li>
                 ))}
               </ol>

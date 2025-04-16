@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { pantryService } from '../services/pantryService';
+import pantryService from '../services/pantryService';
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
 
 const PantryPage = ({ userData }) => {
@@ -13,7 +13,9 @@ const PantryPage = ({ userData }) => {
       
       setLoading(true);
       try {
+        // Using the getUserPantry method from our pantryService
         const items = await pantryService.getUserPantry(userData.id);
+        console.log('Fetched pantry items:', items);
         setPantryItems(items);
       } catch (err) {
         console.error('Error fetching pantry items:', err);
@@ -28,7 +30,8 @@ const PantryPage = ({ userData }) => {
 
   const handleRemoveItem = async (pantryId) => {
     try {
-      await pantryService.removeFromPantry(pantryId);
+      // Using the removeFromPantry method
+      await pantryService.removeFromPantry(pantryId, userData.id);
       // Update UI after removal
       setPantryItems(pantryItems.filter(item => item.pantry_id !== pantryId));
     } catch (err) {
@@ -47,7 +50,8 @@ const PantryPage = ({ userData }) => {
     }
     
     try {
-      await pantryService.updatePantryItemQuantity(pantryId, newQuantity);
+      // Using the updatePantryItemQuantity method
+      await pantryService.updatePantryItemQuantity(pantryId, newQuantity, userData.id);
       // Update UI after quantity change
       setPantryItems(pantryItems.map(item => 
         item.pantry_id === pantryId 
@@ -152,6 +156,7 @@ const PantryPage = ({ userData }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
+                      {/* Display the actual unit from the database */}
                       <div className="text-sm text-gray-500">{item.unit}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
