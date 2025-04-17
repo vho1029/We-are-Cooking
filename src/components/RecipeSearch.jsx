@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { searchRecipes } from "../services/recipeSearchService";
@@ -120,9 +119,7 @@ const RecipeSearch = ({ userData }) => {
         {recipes.map((recipe, index) => (
           <div 
             key={`${recipe.id}-${index}`} 
-            className={`border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 ${
-              recipe.isFromLocalDb ? "bg-green-50" : "bg-white"
-            }`}
+            className="border border-gray-200 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 bg-white"
           >
             <h3 className="font-bold text-lg text-gray-800">{recipe.title}</h3>
             {recipe.image && (
@@ -139,16 +136,11 @@ const RecipeSearch = ({ userData }) => {
             </div>
             {/* Display recipe price if available */}
             {recipe.totalPrice > 0 && (
-              <p className="mt-2 font-semibold text-green-600">
+              <p className="mt-2 font-semibold text-gray-700">
                 {formatCurrency(recipe.totalPrice)}
               </p>
             )}
-            {/* Show badge for cached recipes */}
-            {recipe.isFromLocalDb && (
-              <span className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-2">
-                Cached Recipe
-              </span>
-            )}
+            {/* Removed both the badge and any reference to recipe.isFromLocalDb */}
             <div className="flex items-center justify-between mt-3">
               <FavoriteButton recipeId={recipe.id} userId={userData?.id} />
               <MealPlanButton recipeId={recipe.id} userId={userData?.id} />
