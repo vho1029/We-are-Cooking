@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getRecipeDetails, getIngredientPrices, saveRecipeToSupabase , getRecipeFromSupabase } from '../api';
+import { getRecipeDetails, getIngredientPrices, saveRecipeToSupabase , getRecipeFromSupabase , insertIngredient} from '../api';
 import AddToPantryButton from '../components/AddToPantryButton';
 import { supabase } from '../supabaseClient';
 
@@ -82,6 +82,27 @@ const RecipeDetails = () => {
             ...ingredient,
             estimatedPrice: prices[i].estimatedPrice
           }));
+        }
+
+        for (let i = 0; i < prices.length; i++) {
+          const item = prices[i];
+          const ingredient = recipe.extendedIngredients[i];
+    
+          const ingredientName = ingredient?.name || "Unnamed ingredient";
+          const unit = "g";  // Default to grams
+          const caloriesPerUnit = item.caloriesPerGram || 0;
+          const pricePerUnit = item.pricePerGram || 0;
+          const externalId = item.krogerId || null;
+          const spoonacularId = ingredient?.id || null;
+    
+          await insertIngredient({
+            ingredientName,
+            unit,
+            caloriesPerUnit,
+            pricePerUnit,
+            externalId,
+            spoonacularId
+          });
         }
         
         // Save recipe with price to Supabase

@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 // Import the entire service as a default import
 import pantryService from '../services/pantryService';
 import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
+import { getRecipesFromPantry } from '../api';
+import { Link } from "react-router-dom";
 
 const Pantry = ({ userData }) => {
   const [pantryItems, setPantryItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recommendedRecipes, setRecommendedRecipes] = useState([]);
 
   useEffect(() => {
     const loadPantryItems = async () => {
@@ -18,6 +21,18 @@ const Pantry = ({ userData }) => {
         // Make sure to use the method name as defined in your pantryService object
         const items = await pantryService.getUserPantry(userData.id);
         setPantryItems(items);
+        if (items.length > 0) {
+          console.log('Fetching recommended recipes...');
+          
+          // Fetch recipe titles based on the pantry ingredients
+          const recipeTitles = await getRecipesFromPantry(items);
+          console.log('Recommended Recipes: ', recipeTitles);
+
+          // After receiving the titles, pass them to getThreeRecipes to fetch 3 recipes
+          const recipes = await pantryService.getThreeRecipes(recipeTitles);
+          console.log('Fetched Recipes from Spoonacular', recipes);
+          setRecommendedRecipes(recipes);
+        }
       } catch (err) {
         console.error('Error fetching pantry items:', err);
         setError('Failed to load pantry items. Please try again later.');
@@ -198,6 +213,31 @@ const Pantry = ({ userData }) => {
           </div>
         </div>
       )}
+      <div className="mt-12">
+        <h2 className="text-xl font-medium mb-6">Recommended Recipes</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {recommendedRecipes.length > 0 ? (
+              recommendedRecipes.map((recipe) => (
+                <div key={recipe.id} className="bg-white p-4 rounded-lg shadow-md">
+                  <img
+                    src={recipe.image}
+                    alt={recipe.title}
+                    className="w-full h-48 object-cover rounded-md mb-4"
+                  />
+                  <h3 className="text-lg font-semibold text-gray-800">{recipe.title}</h3>
+                  <Link 
+                    to={`/recipe/${recipe.id}`} 
+                    className="mt-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-green-600 text-center block"
+                  >
+                    View Recipe
+                  </Link>
+                </div>
+              ))
+            ) : (
+              <p>No recommended recipes found.</p>
+            )}
+        </div>
+      </div>
     </div>
   );
 };

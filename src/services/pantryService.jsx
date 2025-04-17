@@ -1,4 +1,5 @@
 import { supabase } from '../supabaseClient';
+import { fetchRecipesFromSpoonacular } from './spoonacularService';
 
 /*/
  * 
@@ -394,13 +395,37 @@ const updatePantryItemQuantity = async (pantryId, quantity, userId) => {
   }
 };
 
+const getThreeRecipes = async (titles) => {
+  const matchedRecipes = [];
+
+  for (const title of titles) {
+    const results = await fetchRecipesFromSpoonacular({ query: title });
+
+    if (results.length > 0) {
+      console.log(`✅ Found match for: ${title}`);
+      matchedRecipes.push(results[0]);
+    }
+
+    if (matchedRecipes.length === 1) break; //could be 3 but that would significantly reduce the number of api calls we can make
+  }
+
+  if (matchedRecipes.length === 0) {
+    console.warn("No matching recipes found from the titles.");
+  }
+
+  return matchedRecipes;
+};
+
 // Create the pantryService object with function mappings
 const pantryService = {
   getUserPantry: fetchPantryItems,
   addToPantry,
   removeFromPantry: removePantryItem,
-  updatePantryItemQuantity
+  updatePantryItemQuantity,
+  getThreeRecipes
 };
+
+
 
 // Export as default
 export default pantryService;

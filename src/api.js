@@ -166,7 +166,7 @@ export const insertIngredient = async ({
       .from('ingredients')
       .insert([{
         name: ingredientName,
-        unit,
+        unit: unit,
         calories_per_unit: caloriesPerUnit,
         price_per_unit: pricePerUnit,
         last_updated: new Date().toISOString(),
@@ -623,5 +623,43 @@ Size: ${item.size}`
     });
 
   return results;
+};
+
+export const getRecipesFromPantry = async (pantryItems) => {
+  try {
+    const ingredientList = pantryItems.map(item => {
+      const { name, quantity, unit } = item;
+      return `- ${name} (${quantity} ${unit})`;
+    }).join('\n');
+
+    const prompt = `
+Given the following pantry ingredients and their quantities:
+
+${ingredientList}
+
+Suggest 10 recipe **titles only** that best utilize these ingredients as fully as possible.
+Only list the titles, numbered 1 to 10. Do not include descriptions or extra text.
+`;
+
+    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+      }),
+    });
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const recipeTitles = text
+      .split('\n')
+      .map(line => line.replace(/^\d+\.\s*/, '').trim())
+      .filter(title => title.length > 0);
+
+    return recipeTitles;
+  } catch (error) {
+    console.error('Error generating recipe titles:', error);
+    throw error;
+  }
 };
 
