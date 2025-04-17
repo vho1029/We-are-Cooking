@@ -59,7 +59,14 @@ export const saveRecipeToSupabase = async (recipe, totalPrice) => {
       // If exists, update only the price
       const { error: updateError } = await supabase
         .from('test_recipes')
-        .update({ total_price: totalPrice })
+        .update({ 
+          total_price: totalPrice, 
+          extended_ingredients: recipe.extendedIngredients,
+          analyzed_instructions: recipe.analyzedInstructions,
+          nutrition: recipe.nutrition,
+          wine_pairing: recipe.wine_pairing,
+          created_at: new Date().toISOString(),
+        })
         .eq('spoonacular_id', spoonacularId);
 
       if (updateError) {

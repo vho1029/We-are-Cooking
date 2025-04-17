@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getRecipeDetails, getIngredientPrices, saveRecipeToSupabase } from '../api';
+import { getRecipeDetails, getIngredientPrices, saveRecipeToSupabase , getRecipeFromSupabase } from '../api';
 import AddToPantryButton from '../components/AddToPantryButton';
 import { supabase } from '../supabaseClient';
 
@@ -23,12 +23,52 @@ const RecipeDetails = () => {
     const fetchRecipeDetails = async () => {
       setLoading(true);
       try {
-        const data = await getRecipeDetails(id);
-        setRecipe(data);
+        const cachedRecipe = await getRecipeFromSupabase(id);
+
+        const daysAgo = new Date();
+        daysAgo.setDate(daysAgo.getDate() - 7);
+
+        const isValidCachedRecipe = cachedRecipe &&
+          cachedRecipe.extended_ingredients &&
+          cachedRecipe.analyzed_instructions &&
+          cachedRecipe.total_price &&
+          cachedRecipe.nutrition &&
+          new Date(cachedRecipe.created_at) > daysAgo;
+
+        if (isValidCachedRecipe) {
+          const normalized = {
+            ...cachedRecipe,
+            extendedIngredients: cachedRecipe.extended_ingredients,
+            analyzedInstructions: cachedRecipe.analyzed_instructions,
+            nutrition: cachedRecipe.nutrition && typeof cachedRecipe.nutrition === 'string'
+              ? JSON.parse(cachedRecipe.nutrition)
+              : cachedRecipe.nutrition
+          };
+
+          const cachedPrices = normalized.extendedIngredients
+            .filter(ing => ing.estimatedPrice !== undefined)
+            .map(ing => ({
+              name: ing.name,
+              estimatedPrice: ing.estimatedPrice,
+              amountInGrams: ing.amountInGrams,
+              caloriesPerGram: ing.caloriesPerGram,
+              pricePerGram: ing.pricePerGram,
+              krogerId: ing.krogerId,
+              error: ing.error
+            }));
+        
+          setRecipe(normalized);
+          setTotalPrice(cachedRecipe.total_price || 0);
+          setIngredientPrices(cachedPrices);
+          setLoading(false);
+          return;
+        }
+        const recipe = await getRecipeDetails(id);
+        setRecipe(recipe);
         
         // After getting recipe details, fetch price data
         setPriceLoading(true);
-        const prices = await getIngredientPrices(data.extendedIngredients);
+        const prices = await getIngredientPrices(recipe.extendedIngredients);
         setIngredientPrices(prices);
         
         // Calculate total price
@@ -36,9 +76,16 @@ const RecipeDetails = () => {
           return sum + (item.estimatedPrice || 0);
         }, 0);
         setTotalPrice(calculatedTotal);
+
+        if (recipe.extendedIngredients && prices.length === recipe.extendedIngredients.length) {
+          recipe.extendedIngredients = recipe.extendedIngredients.map((ingredient, i) => ({
+            ...ingredient,
+            estimatedPrice: prices[i].estimatedPrice
+          }));
+        }
         
         // Save recipe with price to Supabase
-        await saveRecipeToSupabase(data, calculatedTotal);
+        await saveRecipeToSupabase(recipe, calculatedTotal);
         
         setPriceLoading(false);
       } catch (error) {
