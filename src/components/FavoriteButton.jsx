@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 
-const FavoriteButton = ({ recipeId, userId }) => {
-  const [isFavorite, setIsFavorite] = useState(false);
+const FavoriteButton = ({ recipeId, userId, initialFavorite = null }) => {
+  const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [loading, setLoading] = useState(false);
 
   // Check if recipe is already favorited
   useEffect(() => {
     const checkFavoriteStatus = async () => {
-      if (!userId || !recipeId) return;
+      if (initialFavorite !== null || !userId || !recipeId) return;
 
       try {
         // Use the correct syntax for Supabase query
@@ -31,7 +31,7 @@ const FavoriteButton = ({ recipeId, userId }) => {
     };
 
     checkFavoriteStatus();
-  }, [recipeId, userId]);
+  }, [recipeId, userId, initialFavorite]);
 
   const toggleFavorite = async () => {
     if (!userId) {

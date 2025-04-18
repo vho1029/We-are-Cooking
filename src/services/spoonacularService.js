@@ -1,6 +1,6 @@
 // src/services/spoonacularService.js
 
-const API_KEY = "40f858dc01194ff0be5de594313a0c5f";
+const API_KEY = "0e2a083a8ead436e883e2e9f3f135f83";
 const BASE_URL = "https://api.spoonacular.com/recipes/complexSearch";
 
 /**

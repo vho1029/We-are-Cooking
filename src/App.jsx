@@ -24,6 +24,7 @@ import Favorites from "./pages/Favorites";
 import Profile from "./pages/Profile";
 import RecipeDetails from "./pages/RecipeDetails";
 import PantryPage from "./pages/Pantry";
+import HistoryPage from "./pages/History";
 import Auth from "./pages/Auth";
 
 function App() {
@@ -77,6 +78,7 @@ function App() {
           <Route path="/mealplan" element={<MealPlanPage userData={userData}/>} />
           <Route path="/favorites" element={<Favorites userData={userData}/>} />
           <Route path="/pantry" element={<PantryPage userData={userData}/>} />
+          <Route path="/history" element={<HistoryPage userData={userData}/>} />
           <Route path="/profile" element={<Profile userData={userData} />} />
           <Route path="/recipe/:id" element={<RecipeDetails />} />
           <Route path="/update-profile" element={<UpdateProfile />} />

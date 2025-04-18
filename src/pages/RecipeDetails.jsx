@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { getRecipeDetails, getIngredientPrices, saveRecipeToSupabase , getRecipeFromSupabase , insertIngredient} from '../api';
 import AddToPantryButton from '../components/AddToPantryButton';
 import { supabase } from '../supabaseClient';
+import FavoriteButton from "../components/FavoriteButton";
+import MealPlanButton from "../components/MealPlanButton";
 
 const RecipeDetails = () => {
   const { id } = useParams();
@@ -181,6 +183,8 @@ const RecipeDetails = () => {
                     {formatCurrency(totalPrice)} total
                   </span>
                 )}
+                <FavoriteButton recipeId={recipe.id} userId={userData?.id} />
+                <MealPlanButton recipeId={recipe.id} userId={userData?.id} />
               </div>
             </div>
           </div>

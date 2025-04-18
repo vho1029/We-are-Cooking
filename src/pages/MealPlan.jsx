@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Link } from "react-router-dom";
 import RemoveRecipeButton from "../components/RemovePlanButton";
+import FavoriteButton from "../components/FavoriteButton";
 
 const MealPlanPage = ({ userData }) => {
   const [mealPlans, setMealPlans] = useState([]);
@@ -32,23 +33,60 @@ const MealPlanPage = ({ userData }) => {
       }
 
       const recipeIds = data.map(item => item.spoonacular_id);
-      const uniqueRecipeIds = [...new Set(recipeIds)];
 
       try {
-        const response = await fetch(
-          `https://api.spoonacular.com/recipes/informationBulk?ids=${uniqueRecipeIds.join(",")}&apiKey=e035ff36a0824d768ead204d0104ec67`
-        );
-        const recipes = await response.json();
-        console.log(recipes); 
+        const { data: recipeData, error: recipeError } = await supabase
+          .from('test_recipes')
+          .select('spoonacular_id, title, image, extended_ingredients, analyzed_instructions, nutrition')
+          .in('spoonacular_id', recipeIds);
+
+        if (recipeError) {
+          console.error('Error fetching recipes from test_recipes:', recipeError);
+          setLoading(false);
+          return;
+        }
+
         const recipeMap = {};
-        recipes.forEach(recipe => {
-          recipeMap[recipe.id] = recipe;
+        recipeData.forEach(recipe => {
+          recipeMap[recipe.spoonacular_id] = recipe;
         });
 
-        const enrichedPlans = data.map(plan => ({
-          ...plan,
-          recipe: recipeMap[plan.spoonacular_id] || null,
-        }));
+        const enrichedPlans = await Promise.all(
+          data.map(async (plan) => {
+            const recipe = recipeMap[plan.spoonacular_id];
+
+            if (
+              !recipe ||
+              !recipe.extended_ingredients ||
+              !recipe.analyzed_instructions ||
+              !recipe.nutrition
+            ) {
+              try {
+                const response = await fetch(
+                  `https://api.spoonacular.com/recipes/informationBulk?ids=${plan.spoonacular_id}&apiKey=0e2a083a8ead436e883e2e9f3f135f83`
+                );
+                const apiData = await response.json();
+                const apiRecipe = apiData[0]; 
+
+                return {
+                  ...plan,
+                  recipe: apiRecipe || null,
+                };
+              } catch (apiError) {
+                console.error('Error fetching recipe data from Spoonacular:', apiError);
+                return {
+                  ...plan,
+                  recipe: null,
+                };
+              }
+            } else {
+              return {
+                ...plan,
+                recipe: recipe || null,
+              };
+            }
+          })
+        );
 
         setMealPlans(enrichedPlans);
       } catch (apiError) {
@@ -93,10 +131,11 @@ const MealPlanPage = ({ userData }) => {
               )}
               <div className="flex justify-between items-center mt-2">
                 {/* Remove Recipe Button */}
-                <RemoveRecipeButton recipeId={plan.recipe?.id} userId={userData?.id} />
+                <RemoveRecipeButton spoonacularId={plan.spoonacular_id} userId={userData?.id} />
+                <FavoriteButton recipeId = {plan.recipe?.spoonacular_id || plan.recipe?.id} userId= {userData?.id}/>
                 {/* View Recipe Button */}
                 <Link
-                  to={`/recipe/${plan.spoonacular_id}`}
+                  to={`/recipe/${plan.spoonacular_id || plan.id}`}
                   className="text-blue-600 hover:underline"
                 >
                   View Recipe

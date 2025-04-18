@@ -1,4 +1,4 @@
-const API_KEY = "40f858dc01194ff0be5de594313a0c5f";
+const API_KEY = "0e2a083a8ead436e883e2e9f3f135f83";
 const BASE_URL = "https://api.spoonacular.com";
 const PRICE_API_KEY = "PedilSvPc1gJkpZDvz2opYdfQvrPokjI8xLdk0pU";
 const PRICE_BASE_URL = "https://api.nal.usda.gov/fdc/v1";
@@ -637,7 +637,7 @@ Given the following pantry ingredients and their quantities:
 
 ${ingredientList}
 
-Suggest 10 recipe **titles only** that best utilize these ingredients as fully as possible.
+Suggest 10 Spoonacular recipe **titles only** that best utilize these ingredients as fully as possible.
 Only list the titles, numbered 1 to 10. Do not include descriptions or extra text.
 `;
 

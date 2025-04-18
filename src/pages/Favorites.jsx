@@ -3,6 +3,7 @@ import { supabase } from "../supabaseClient";
 import { FaStar } from "react-icons/fa";
 import FavoriteButton from "../components/FavoriteButton";
 import { Link } from "react-router-dom";
+import MealPlanButton from "../components/MealPlanButton";
 
 const FavoritesPage = ({ userData }) => {
   const [favorites, setFavorites] = useState([]);
@@ -34,15 +35,49 @@ const FavoritesPage = ({ userData }) => {
         return;
       }
 
-      // Fetches recipes from Spoonacular as a batch
-      try {
-        const response = await fetch(`https://api.spoonacular.com/recipes/informationBulk?ids=${recipeIds.join(",")}&apiKey=e035ff36a0824d768ead204d0104ec67`);
-        const recipes = await response.json();
-        setFavorites(recipes);
-      } catch (error) {
-        console.error("Error fetching recipes from Spoonacular:", error);
+      const { data: cachedRecipes = [], error: cachedError } = await supabase
+        .from("test_recipes")
+        .select("spoonacular_id, title, image, extended_ingredients, analyzed_instructions, nutrition")
+        .in("spoonacular_id", recipeIds); 
+      
+      if (cachedError) {
+        console.error("Error fetching from test_recipes:", cachedError);
+        setError("Failed to fetch from cache.");
       }
 
+      const recipeMap = {};
+      cachedRecipes.forEach(recipe => {
+        recipeMap[recipe.spoonacular_id] = recipe;
+      });
+
+      // Identify which recipes are missing or incomplete
+      const missingOrIncompleteIds = recipeIds.filter(id => {
+        const r = recipeMap[id];
+        return (
+          !r ||
+          !r.extended_ingredients ||
+          !r.analyzed_instructions ||
+          !r.nutrition
+        );
+      });
+
+      let spoonacularRecipes = [];
+      if (missingOrIncompleteIds.length > 0) {
+        try {
+          const response = await fetch(`https://api.spoonacular.com/recipes/informationBulk?ids=${missingOrIncompleteIds.join(",")}&apiKey=0e2a083a8ead436e883e2e9f3f135f83`);
+          spoonacularRecipes = await response.json();
+        } catch (err) {
+          console.error("Error fetching from Spoonacular:", err);
+          setError("Some recipes could not be loaded.");
+        }
+      }
+
+      // Combine cached and fetched recipes
+      const fullRecipes = recipeIds.map(id => {
+        return recipeMap[id] || spoonacularRecipes.find(r => r.id === id);
+      }).filter(Boolean); // Remove any nulls just in case
+
+      setFavorites(fullRecipes);
       setLoading(false);
     }
 
@@ -53,8 +88,20 @@ const FavoritesPage = ({ userData }) => {
     return <p className="text-center text-gray-500">Please log in to see your favorites.</p>;
   }
 
+  if (loading) {
+    return <p className="text-center text-gray-500">Loading favorites...</p>;
+  }
+
+  if (error) {
+    return <p className="text-center text-red-500">{error}</p>;
+  }
+
+  if (favorites.length === 0) {
+    return <p className="text-center text-gray-500">No favorites yet.</p>;
+  }
+
   return (
-    <div className="p-4 max-w-2xl mx-auto">
+    <div className="p-4 w-full">
       <h2 className="text-2xl font-bold mb-4">Your Favorites</h2>
       {loading ? (
         <p>Loading...</p>
@@ -72,10 +119,20 @@ const FavoritesPage = ({ userData }) => {
                   className="w-32 h-32 object-cover mt-2 rounded-md"
                 />
               )}
-              <div className="flex items-center justify-between mt-3">
-                <FavoriteButton recipeId={recipe.id} userId={userData?.id} />
-                <Link 
-                  to={`/recipe/${recipe.id}`}
+              <div className="flex flex-wrap items-center justify-between mt-4 gap-4">
+                <div className="flex items-center gap-x-4">
+                  <FavoriteButton
+                    recipeId={recipe.spoonacular_id || recipe.id}
+                    userId={userData?.id}
+                    initialFavorite={true}
+                  />
+                  <MealPlanButton
+                    recipeId={recipe.spoonacular_id || recipe.id}
+                    userId={userData?.id}
+                  />
+                </div>
+                <Link
+                  to={`/recipe/${recipe.spoonacular_id || recipe.id}`}
                   className="text-blue-600 hover:underline"
                 >
                   View Recipe
