@@ -3,21 +3,21 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import RecipeCard from '../../components/RecipeCard'; // ✅ Correct relative path
+import RecipeCard from '../../components/RecipeCard'; // Path
 
-// ✅ Mocking FavoriteButton to avoid external dependencies
+// Mocking FavoriteButton to avoid external dependencies
 vi.mock('../../components/FavoriteButton', () => ({
   default: () => <div>Mock FavoriteButton</div>
 }));
 
-// ✅ Mock recipe object to pass to the component
+// Mock recipe object to pass to the component
 const mockRecipe = {
   id: 1,
   title: 'Pumpkin Pie',
   image: 'https://example.com/pumpkin.jpg',
   readyInMinutes: 45,
-  servings: 2,
-  pricePerServing: 150, // cents
+  servings: 4,
+  pricePerServing: 150, 
 };
 
 describe('RecipeCard Component', () => {
@@ -28,7 +28,7 @@ describe('RecipeCard Component', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('pumpkin pie')).toBeInTheDocument();
+    expect(screen.getByText('Pumpkin Pie')).toBeInTheDocument();
     expect(screen.getByRole('img')).toHaveAttribute('src', mockRecipe.image);
   });
 
