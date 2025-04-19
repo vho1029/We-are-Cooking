@@ -19,7 +19,7 @@ vi.mock('../../supabaseClient', () => ({
 }));
 
 describe('Login', () => {
-  it('renders login form', () => {
+  it('creates login form', () => {
     render(<Login />);
     expect(screen.getByText(/login/i)).toBeInTheDocument();
   });

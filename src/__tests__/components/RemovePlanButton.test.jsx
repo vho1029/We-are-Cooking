@@ -18,7 +18,7 @@ vi.mock('../../supabaseClient', () => ({
 }));
 
 describe('RemovePlanButton', () => {
-  it('renders remove button', () => {
+  it('create remove button', () => {
     render(<RemovePlanButton userId="1" spoonacularId="2" />);
   });
 });

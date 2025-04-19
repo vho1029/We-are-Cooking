@@ -12,7 +12,7 @@ vi.mock('../../supabaseClient', () => ({
               data: [
                 {
                   recipe_id: 1,
-                  meal_type: 'Lunch',
+                  meal_type: 'Dinner',
                   scheduled_date: new Date().toISOString(),
                   spoonacular_id: 1,
                 },

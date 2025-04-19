@@ -20,9 +20,9 @@ vi.mock('../../supabaseClient', () => ({
         eq: () => ({
           single: () => ({
             data: {
-              name: 'John Doe',
-              username: 'johnny',
-              email: 'john@example.com',
+              name: 'Jet Blaze',
+              username: 'Tom Cruise',
+              email: 'JB@example.com',
               DOB: '1990-01-01',
               Dietary: 'Vegan'
             },
@@ -35,7 +35,7 @@ vi.mock('../../supabaseClient', () => ({
 }));
 
 describe('Profile', () => {
-  it('renders profile heading only', async () => {
+  it('profile heading only', async () => {
     render(<Profile />);
     const heading = await screen.findByRole('heading', { name: /profile/i });
     expect(heading).toBeInTheDocument();

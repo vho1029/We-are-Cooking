@@ -14,7 +14,7 @@ vi.mock('../../components/MealPlanButton', () => ({
 }));
 
 describe('RecipeSearch', () => {
-  it('renders search input', () => {
+  it('creates search input', () => {
     render(<RecipeSearch />);
     expect(screen.getByPlaceholderText(/search recipes/i)).toBeInTheDocument();
   });

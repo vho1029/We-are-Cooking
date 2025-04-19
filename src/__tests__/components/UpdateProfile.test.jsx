@@ -21,7 +21,7 @@ vi.mock('react-router-dom', () => ({
 }));
 
 describe('UpdateProfile', () => {
-  it('renders update form', () => {
+  it('create update form', () => {
     render(<UpdateProfile />);
     expect(screen.getByText(/update profile/i)).toBeInTheDocument();
   });

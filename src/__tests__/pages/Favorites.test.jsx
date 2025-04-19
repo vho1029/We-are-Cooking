@@ -17,7 +17,7 @@ vi.mock('../../supabaseClient', () => ({
 }));
 
 describe('FavoritesPage', () => {
-  it('shows login message when no user is logged in', () => {
+  it('shows a message when no user is logged in', () => {
     render(<FavoritesPage userData={null} />);
     expect(screen.getByText(/please log in/i)).toBeInTheDocument();
   });

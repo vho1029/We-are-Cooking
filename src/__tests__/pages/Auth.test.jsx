@@ -13,7 +13,7 @@ vi.mock('../../components/Signup', () => ({
 }));
 
 describe('Auth Component', () => {
-  it('renders login view by default and toggles to signup', () => {
+  it('creates login view by default and toggles to signup', () => {
     render(<Auth />);
     expect(screen.getByText(/welcome back/i)).toBeInTheDocument();
     fireEvent.click(screen.getByText(/sign up/i));

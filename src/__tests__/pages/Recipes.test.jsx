@@ -13,7 +13,7 @@ vi.mock('../../components/Recommendations', () => ({
 }));
 
 describe('RecipesPage', () => {
-  it('renders recommended recipes section', () => {
+  it('creates recommended recipes section', () => {
     render(<RecipesPage userData={{ id: 'test' }} />);
     expect(screen.getByText(/recommended recipes/i)).toBeInTheDocument();
   });

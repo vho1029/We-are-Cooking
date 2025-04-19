@@ -16,7 +16,7 @@ vi.mock('../../supabaseClient', () => ({
 }));
 
 describe('MealPlanButton', () => {
-  it('renders input fields and button', () => {
+  it('creates input fields and button', () => {
     render(<MealPlanButton userId="user123" recipeId={42} />);
   });
 });

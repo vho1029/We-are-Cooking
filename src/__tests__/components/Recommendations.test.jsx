@@ -18,7 +18,7 @@ vi.mock('../../supabaseClient', () => ({
 }));
 
 describe('Recommendations', () => {
-  it('renders loading initially', () => {
+  it('creates loading initially', () => {
     render(<Recommendations userId="123" />);
     expect(screen.getByText(/loading/i)).toBeInTheDocument();
   });

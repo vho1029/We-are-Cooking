@@ -12,7 +12,7 @@ vi.mock('../../services/pantryService', () => ({
 }));
 
 describe('PantryPage', () => {
-  it('renders pantry page for user', () => {
+  it('creates pantry page for user', () => {
     render(<PantryPage userData={{ id: 'user123' }} />);
   });
 });

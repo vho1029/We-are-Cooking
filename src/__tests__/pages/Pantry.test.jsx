@@ -16,7 +16,7 @@ vi.mock('../../api', () => ({
 }));
 
 describe('Pantry', () => {
-  it('renders pantry header', async () => {
+  it('pantry header', async () => {
     render(<Pantry userData={{ id: 'test-user' }} />);
     const heading = await screen.findByText(/my pantry/i);
     expect(heading).toBeInTheDocument();

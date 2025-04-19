@@ -16,7 +16,7 @@ vi.mock('../../api', () => ({
 }));
 
 describe('RecipeDetails', () => {
-  it('shows loading initially', () => {
+  it('shows loading', () => {
     render(<RecipeDetails />);
     expect(screen.getByText(/loading recipe details/i)).toBeInTheDocument();
   });

@@ -15,7 +15,7 @@ vi.mock('../../supabaseClient', () => ({
 }));
 
 describe('Signup', () => {
-  it('renders signup form', () => {
+  it('create signup form', () => {
     render(<Signup />);
     expect(screen.getByText(/create an account/i)).toBeInTheDocument();
   });

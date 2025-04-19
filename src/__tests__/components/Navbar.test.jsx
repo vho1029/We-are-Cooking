@@ -8,7 +8,7 @@ vi.mock('../../components/LogoutButton', () => ({
 }));
 
 describe('Navbar', () => {
-  it('renders navigation links', () => {
+  it('creates navigation links', () => {
     render(
       <MemoryRouter>
         <Navbar />
