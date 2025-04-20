@@ -1,12 +1,39 @@
-# React + Vite
+# We-are-Cooking
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+![codecov](https://codecov.io/gh/vho1029/We-are-Cooking/branch/testpass/graph/badge.svg)
 
-Currently, two official plugins are available:
+## Team Members
+- **Richard Chai**  
+- **Areeb Ehsan**  
+- **Tarun Gadhiraju**  
+- **Victor Ho**  
+- **Milaan Williams**  
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Problem Statement
+The **We-are-Cooking** project is a **meal preparation and recipe application** designed to streamline the cooking process. Eating out daily or hiring a private chef is expensive, and individuals who work long hours often lack the time or energy to cook meals at home. This project aims to provide **cost-effective solutions** for individuals on a **low budget** or those who lack the time to prepare every meal. Our goal is to help users **make health-conscious decisions, save time, and simplify meal preparation.
 
-## Expanding the ESLint configuration
+Competitors include **Hello Fresh, Blue Apron, Factor,** and **New York Times Cooking**. However, these services require **subscriptions**, with Hello Fresh, Blue Apron, and Factor often being more expensive than purchasing ingredients independently. Our approach is unique as we will provide the **current pricing of ingredients** and **total costs for recipes**, offering a **budget-friendly solution**.
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Context Diagram Modules:
+
+
+### Account Management System
+- Users can **create accounts** and manage their **recipe history and favorites**.
+
+### Database Management System
+- Users can find new recipes based on **popularity, recipe types, or past preferences**.
+- Users can search for specific recipes by **category or ingredients**.
+
+### Portion and Macros System
+- Users can **adjust recipe portion sizes**.
+- **Nutritional information** will be displayed according to portion sizes.
+
+### Budget and Price Calculator System
+- Displays **total recipe costs** and **price per meal**.
+- Users can set **budget caps** for recipes.
+
+### Pantry and Ingredients Tracking System
+- Users can **input and manage** the ingredients they own.
+- System will **suggest recipes** based on available ingredients.
+
+
