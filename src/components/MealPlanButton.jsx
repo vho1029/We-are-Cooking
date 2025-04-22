@@ -79,6 +79,7 @@ const MealPlanButton = ({ recipeId, userId }) => {
         type="date"
         value={scheduledDate}
         onChange={(e) => setScheduledDate(e.target.value)}
+        data-testid="meal-date-input" 
         className="p-2 border border-gray-300 rounded-md text-gray-700"
       />
       <button
